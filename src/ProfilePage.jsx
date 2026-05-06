@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 
 const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
-    const [newUsername, setNewUsername] = useState('');
     const [isEditing, setIsEditing] = useState(false);
+    const [newUsername, setNewUsername] = useState(user?.username || '');
+
     const [displayLimit, setDisplayLimit] = useState(20);
 
     const sortedSessions = [...(user.sessions || [])].reverse();
@@ -99,14 +100,24 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                             </div>
                         </div>
 
-                        <div className="col-span-2 grid grid-cols-2 gap-4">
+                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="bg-secondary text-white p-6 border-2 border-secondary pixel-shadow-sm text-center">
-                                <p className="text-xs font-bold text-primary uppercase mb-1">Total Points</p>
-                                <p className="text-3xl font-black font-mono">{user.totalPoints.toLocaleString()}</p>
+                                <p className="text-[10px] font-bold text-primary uppercase mb-1">Total Points</p>
+                                <p className="text-xl font-black font-mono">{user.totalPoints.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-primary text-secondary p-6 border-4 border-secondary pixel-shadow-sm text-center">
+                                <p className="text-[10px] font-black uppercase mb-1 opacity-70">$DASH Balance</p>
+                                <p className="text-xl font-black font-mono">{user.dashBalance?.toLocaleString() || 0}</p>
+                                <p className="text-[8px] font-bold uppercase mt-2 opacity-60">*Non-Transferable</p>
                             </div>
                             <div className="bg-white p-6 border-4 border-secondary pixel-shadow-sm text-center">
-                                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Global Level</p>
-                                <p className="text-3xl font-black font-mono text-secondary">{user.globalLevel}</p>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Global Level</p>
+                                <p className="text-xl font-black font-mono text-secondary">{user.globalLevel}</p>
+                            </div>
+                            <div className="bg-accent-gray p-6 border-4 border-secondary pixel-shadow-sm text-center relative overflow-hidden">
+                                <p className="text-[10px] font-bold text-secondary uppercase mb-1">Est. Winnings</p>
+                                <p className="text-xl font-black font-mono text-primary">0 $DASH</p>
+                                <p className="text-[8px] font-bold uppercase mt-2 text-gray-400">Current Rank: --</p>
                             </div>
                         </div>
                     </div>
@@ -117,6 +128,28 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
 
                     {/* Session History */}
                     <div className="md:col-span-2">
+                        {/* Tournament Standing Card */}
+                        <div className="bg-secondary text-white border-4 border-primary p-6 mb-8 pixel-shadow flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="size-12 bg-primary flex items-center justify-center text-secondary">
+                                    <span className="material-symbols-outlined text-3xl font-black">trophy</span>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-primary">Tournament Standing</h4>
+                                    <p className="text-xs text-gray-400 uppercase">Weekly Season #1</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Projected Share</p>
+                                    <p className="text-xl font-black font-mono text-primary">0 $DASH</p>
+                                </div>
+                                <button disabled className="bg-gray-700 text-gray-500 border-2 border-gray-600 px-4 py-2 text-xs font-black uppercase tracking-wider cursor-not-allowed">
+                                    Claim Pool
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">history</span>
@@ -139,7 +172,20 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                                             <div className="text-xs font-mono font-bold">{new Date(session.date).toLocaleDateString()}</div>
                                             <div className="text-right font-black text-sm">{session.score}</div>
                                             <div className="text-right text-xs">LVL {session.level}</div>
-                                            <div className="text-right text-[10px] font-bold text-green-600">VALIDATED</div>
+                                            <div className="text-right flex flex-col items-end">
+                                                <div className="text-[10px] font-bold text-primary animate-pulse">+$DASH PENDING</div>
+                                                {session.txHash && (
+                                                    <a 
+                                                        href={`https://testnet.snowtrace.io/tx/${session.txHash}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="text-[8px] text-gray-400 hover:text-primary transition-colors flex items-center gap-0.5"
+                                                    >
+                                                        <span>Verify</span>
+                                                        <span className="material-symbols-outlined text-[8px]">open_in_new</span>
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                     {sortedSessions.length > displayLimit && (

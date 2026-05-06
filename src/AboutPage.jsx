@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AboutPage = ({ onBack, startGame }) => {
+const AboutPage = ({ onBack, startGame, status }) => {
     return (
         <div className="min-h-screen bg-background-light font-display antialiased text-secondary selection:bg-primary selection:text-secondary">
             {/* Navbar - Simplified */}
@@ -12,12 +12,15 @@ const AboutPage = ({ onBack, startGame }) => {
                         </div>
                         <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase">Back</h2>
                     </div>
-                    <button
-                        onClick={startGame}
-                        className="bg-primary text-secondary px-6 py-2 font-bold uppercase tracking-wider text-sm border-2 border-secondary pixel-shadow pixel-shadow-hover transition-all duration-200"
-                    >
-                        Play
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                        <button
+                            onClick={startGame}
+                            className="bg-primary text-secondary px-6 py-2 font-bold uppercase tracking-wider text-sm border-2 border-secondary pixel-shadow pixel-shadow-hover transition-all duration-200"
+                        >
+                            Play
+                        </button>
+                        {status && <span className="text-[10px] font-black uppercase text-primary bg-secondary px-2 py-0.5 animate-pulse">{status}</span>}
+                    </div>
                 </div>
             </nav>
 

@@ -8,10 +8,13 @@ import GameContainer from './GameContainer';
 import AboutPage from './AboutPage';
 import OrientationOverlay from './OrientationOverlay';
 import ProfilePage from './ProfilePage';
+import { TermsOfService, PrivacyPolicy } from './LegalModals';
 
-const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const RANKED_FEE_DASH = 1000; 
+const INITIAL_DASH = 5000;
+const DAILY_REWARD = 500;
 const TESTNET_ID = 88882;
-const LOCALHOST_ID = 31337;
 
 const generateRandomUsername = () => {
   const prefixes = ['Runner', 'Glitch', 'Cyber', 'Dash', 'Block', 'Avax', 'Sewer', 'Sky'];
@@ -48,6 +51,11 @@ function AppContent() {
   const [prizePool, setPrizePool] = useState('0');
   const [showSubmissionToast, setShowSubmissionToast] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [coinsClaimed, setCoinsClaimed] = useState(false);
+  const [hasRevived, setHasRevived] = useState(false);
+  const [isRanked, setIsRanked] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // User Statistics & Session State
   const [user, setUser] = useState(null);
@@ -66,6 +74,9 @@ function AppContent() {
       if (savedStats) {
         const syncedUser = {
           ...savedStats,
+          dashBalance: savedStats.dashBalance ?? 0,
+          bonusClaimed: savedStats.bonusClaimed ?? false,
+          lastDailyClaim: savedStats.lastDailyClaim ?? 0,
           globalLevel: calculateLevelFromXP(savedStats.totalPoints || 0)
         };
         setUser(syncedUser);
@@ -75,6 +86,9 @@ function AppContent() {
           username: generateRandomUsername(),
           usernameChanged: false,
           totalPoints: 0,
+          dashBalance: 0, // Starts at 0, must claim
+          bonusClaimed: false,
+          lastDailyClaim: 0,
           globalLevel: calculateLevelFromXP(0),
           sessions: []
         };
@@ -93,14 +107,17 @@ function AppContent() {
     localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
   };
 
-  // Fetch Prize Pool
+  // Fetch Prize Pool ($DASH)
   const fetchPrizePool = async () => {
-    setPrizePool('1000');
+    // For MVP/Demo: Mocking pool based on entrants or contract balance
+    // In production: This would read from the $DASH contract
+    setPrizePool('250000'); // Starting pool example
     if (!walletProvider) return;
     try {
-      const provider = new ethers.BrowserProvider(walletProvider);
-      const balance = await provider.getBalance(CONTRACT_ADDRESS);
-      setPrizePool(ethers.formatEther(balance));
+      // Logic to fetch $DASH balance or total pool from contract would go here
+      // const dashContract = new ethers.Contract(DASH_TOKEN_ADDRESS, ERC20_ABI, provider);
+      // const balance = await dashContract.balanceOf(CONTRACT_ADDRESS);
+      // setPrizePool(ethers.formatUnits(balance, 18));
     } catch (err) {
       console.error("Error fetching prize pool:", err);
     }
@@ -109,7 +126,6 @@ function AppContent() {
   useEffect(() => {
     if (isConnected) {
       fetchPrizePool();
-      setStatus("Wallet Connected");
     } else {
       setStatus("");
     }
@@ -137,35 +153,149 @@ function AppContent() {
 
   const startGame = () => {
     setScore(0);
+    setRunCoins(0);
     setScoreSubmitted(false);
+    setCoinsClaimed(false);
+    setHasRevived(false); // New run, reset revive
     setGameState('PLAYING');
     setGameKey(prev => prev + 1);
-    setStatus("");
+    // Don't clear status here if it was set by payAndPlay, or clear it after a delay
+    setTimeout(() => setStatus(""), 2000);
   };
 
-  const payAndPlay = async () => {
-    if (!isConnected) return alert("Connect Wallet first!");
+  const claimDailyReward = async () => {
+    if (!isConnected || !walletProvider) return;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const lastClaim = user?.lastDailyClaim || 0;
+    
+    if (now < lastClaim + 86400) {
+      const waitTime = Math.ceil((lastClaim + 86400 - now) / 3600);
+      return alert(`Reward not ready! Please wait ${waitTime} hours.`);
+    }
+
+    try {
+      setStatus("Preparing Daily Reward...");
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
+
+      const abi = ["function claimDailyReward() public"];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+
+      setStatus("Claiming 500 $DASH (Pay Gas)...");
+      const tx = await contract.claimDailyReward();
+      
+      setStatus("Awaiting Finality...");
+      await tx.wait();
+
+      if (user) {
+        const updatedUser = {
+          ...user,
+          dashBalance: user.dashBalance + DAILY_REWARD,
+          lastDailyClaim: now
+        };
+        setUser(updatedUser);
+        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+        setStatus("Daily Reward Claimed!");
+        setTimeout(() => setStatus(""), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Claim Failed");
+      setTimeout(() => setStatus(""), 3000);
+    }
+  };
+
+  const claimBonus = async () => {
+    if (!isConnected || !walletProvider) return;
+    if (user?.bonusClaimed) return alert("Bonus already claimed!");
+
+    try {
+      setStatus("Preparing Bonus Claim...");
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
+
+      setStatus("Awaiting Signature (Pay Gas to Claim)...");
+      const tx = await signer.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        value: ethers.parseEther("0") // Gas only
+      });
+
+      setStatus("Confirming Claim on Avalanche...");
+      await tx.wait();
+
+      if (user) {
+        const updatedUser = {
+          ...user,
+          dashBalance: user.dashBalance + INITIAL_DASH,
+          bonusClaimed: true
+        };
+        setUser(updatedUser);
+        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+        setStatus("5,000 $DASH Claimed Successfully!");
+        setTimeout(() => setStatus(""), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Claim Failed: " + (err.reason || err.message));
+      setTimeout(() => setStatus(""), 3000);
+    }
+  };
+
+  const payAndPlay = async (isRankedMode = true) => {
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
 
     try {
       const provider = new ethers.BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
 
-      // Since ABI is not yet provided, we'll keep it as a documented step
-      // or implement a simple sendTransaction for demo if needed.
-      // But for now, we'll follow the pattern in the file.
+      if (isRankedMode) {
+        if ((user?.dashBalance || 0) < RANKED_FEE_DASH) {
+          return alert(`Insufficient $DASH! You need ${RANKED_FEE_DASH} $DASH to enter.`);
+        }
+      }
 
-      setStatus("Mocking Payment for Demo (SDK Integrated)...");
-      // In production: const tx = await contract.startGame({ value: ethers.parseEther("1.0") });
+      setStatus(isRankedMode ? `Entering Weekly Tournament (Fee: ${RANKED_FEE_DASH} $DASH)...` : "Authorizing Practice Run (Gas Only)...");
+      setIsRanked(isRankedMode);
 
+      // Send transaction to the contract (Gas payment)
+      const tx = await signer.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        value: ethers.parseEther("0") // Gas only transaction
+      });
+
+      setStatus("Confirming Entry on Avalanche...");
+      
+      const receipt = await tx.wait();
+      
+      if (isRankedMode && user) {
+        // Deduct $DASH balance
+        const updatedUser = {
+          ...user,
+          dashBalance: user.dashBalance - RANKED_FEE_DASH
+        };
+        setUser(updatedUser);
+        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+      }
+
+      setStatus("Race Authorized! Starting...");
+      
+      // Small delay for UX
       setTimeout(() => {
-        setStatus("Payment Successful! GLHF!");
         fetchPrizePool();
         startGame();
-      }, 1000);
+      }, 800);
 
     } catch (err) {
       console.error(err);
-      setStatus("Payment Failed: " + (err.reason || err.message));
+      const errorMessage = err.reason || err.message || "User denied transaction";
+      setStatus("Auth Failed: " + (errorMessage.length > 40 ? errorMessage.substring(0, 40) + "..." : errorMessage));
+      
+      // Reset status after a few seconds
+      setTimeout(() => setStatus(""), 3000);
     }
   };
 
@@ -184,31 +314,101 @@ function AppContent() {
     setGameState('GAMEOVER');
   };
 
+  const convertCoinsToDash = async () => {
+    if (!isConnected || !walletProvider) {
+      connectWallet();
+      return;
+    }
+    if (runCoins <= 0) return alert("No coins to claim!");
+
+    try {
+      setStatus(`Preparing Coin Conversion (${runCoins} Coins)...`);
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
+
+      const abi = ["function convertCoinsToDash(uint256 coinAmount) public"];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+
+      setStatus(`Minting ${runCoins} $DASH on Avalanche...`);
+      const tx = await contract.convertCoinsToDash(runCoins);
+      
+      setStatus("Confirming Transaction...");
+      await tx.wait();
+
+      if (user) {
+        const updatedUser = {
+          ...user,
+          dashBalance: user.dashBalance + runCoins
+        };
+        setUser(updatedUser);
+        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+      }
+
+      setCoinsClaimed(true);
+      setStatus("Coins Converted to $DASH!");
+      setTimeout(() => setStatus(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatus("Conversion Failed");
+      setTimeout(() => setStatus(""), 3000);
+    }
+  };
+
+  const watchAd = () => {
+    if (hasRevived) return alert("You can only revive once per game!");
+
+    setStatus("Loading Ad... 📺");
+    // Simulate an ad delay
+    setTimeout(() => {
+      setStatus("Watching Ad to Revive...");
+      setTimeout(() => {
+        setStatus("Revived! Continue running!");
+        setHasRevived(true);
+        setGameState('PLAYING');
+        setGameKey(prev => prev + 1);
+        setTimeout(() => setStatus(""), 2000);
+      }, 5000);
+    }, 1000);
+  };
+
   const submitScore = async () => {
-    if (!isConnected) {
+    if (!isConnected || !walletProvider) {
       connectWallet();
       return;
     }
 
     try {
-      setStatus("Awaiting Signature...");
+      setStatus("Preparing On-Chain Record...");
       const provider = new ethers.BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
 
-      // Show proof of score for MVP video
-      const message = `Summer Dash: Submit High Score\nScore: ${score}\nDate: ${new Date().toLocaleDateString()}`;
-      await signer.signMessage(message);
+      // Standard ABI for a Scoreboard contract
+      const scoreAbi = ["function submitScore(uint256 score) public"];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, scoreAbi, signer);
 
-      setStatus("Score Verified!");
+      setStatus(`Recording Score (${score}) on Avalanche...`);
+      
+      // We call the submitScore function on the contract
+      // This makes the score immutable and verifiable by everyone
+      const tx = await contract.submitScore(score);
+      
+      setStatus("Awaiting Block Finality...");
+      await tx.wait();
+
+      setStatus("Score Immutably Recorded!");
       setShowSubmissionToast(true);
       setScoreSubmitted(true);
-      setTimeout(() => setShowSubmissionToast(false), 3000);
+      setTimeout(() => {
+        setShowSubmissionToast(false);
+        setStatus("");
+      }, 3000);
 
       if (user) {
         const newSession = {
           date: new Date().toISOString(),
           score: score,
-          level: lastLevelReached
+          level: lastLevelReached,
+          txHash: tx.hash // Record the transaction proof
         };
 
         const updatedUser = {
@@ -223,7 +423,9 @@ function AppContent() {
       }
     } catch (err) {
       console.error(err);
-      setStatus("Submission Cancelled");
+      const errorMsg = err.reason || err.message || "User denied submission";
+      setStatus("Submission Failed: " + (errorMsg.length > 30 ? errorMsg.substring(0, 30) + "..." : errorMsg));
+      setTimeout(() => setStatus(""), 3000);
     }
   };
 
@@ -231,33 +433,50 @@ function AppContent() {
   if (gameState === 'START') {
     if (currentView === 'ABOUT') {
       return (
-        <AboutPage
-          onBack={() => setCurrentView('LANDING')}
-          startGame={startGame}
-        />
+        <>
+          <AboutPage
+            onBack={() => setCurrentView('LANDING')}
+            startGame={() => payAndPlay(false)}
+            status={status}
+          />
+          <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
+          <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+        </>
       );
     }
     if (currentView === 'PROFILE' && user) {
       return (
-        <ProfilePage
-          user={user}
-          onBack={() => setCurrentView('LANDING')}
-          onUpdateUsername={updateUsername}
-          onDisconnect={() => open({ view: 'Account' })}
-        />
+        <>
+          <ProfilePage
+            user={user}
+            onBack={() => setCurrentView('LANDING')}
+            onUpdateUsername={updateUsername}
+            onDisconnect={() => open({ view: 'Account' })}
+          />
+          <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
+          <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+        </>
       );
     }
     return (
-      <LandingPage
-        startGame={startGame}
-        payAndPlay={payAndPlay}
-        wallet={wallet}
-        connectWallet={connectWallet}
-        status={status}
-        prizePool={prizePool}
-        onOpenAbout={() => setCurrentView('ABOUT')}
-        onOpenProfile={() => setCurrentView('PROFILE')}
-      />
+      <>
+        <LandingPage
+          startGame={startGame}
+          payAndPlay={payAndPlay}
+          claimBonus={claimBonus}
+          user={user}
+          wallet={wallet}
+          connectWallet={connectWallet}
+          status={status}
+          prizePool={prizePool}
+          onOpenAbout={() => setCurrentView('ABOUT')}
+          onOpenProfile={() => setCurrentView('PROFILE')}
+          onOpenTerms={() => setShowTerms(true)}
+          onOpenPrivacy={() => setShowPrivacy(true)}
+        />
+        <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
+        <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      </>
     );
   }
 
@@ -265,12 +484,15 @@ function AppContent() {
   return (
     <OrientationOverlay>
       <div className="relative w-full h-screen bg-black">
-        <GameContainer
-          key={gameKey}
-          onGameOver={handleGameOver}
-          setScore={setScore}
-          onExit={() => setGameState('START')}
-        />
+        {gameState === 'PLAYING' && (
+          <GameContainer
+            key={gameKey}
+            onGameOver={handleGameOver}
+            setScore={setScore}
+            initialState={hasRevived ? { score: runObstacles, coins: runCoins, level: lastLevelReached } : null}
+            onExit={() => setGameState('START')}
+          />
+        )}
 
         {gameState === 'GAMEOVER' && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -288,9 +510,23 @@ function AppContent() {
                 <h2 className="text-2xl md:text-5xl font-black mt-4 uppercase text-white">SCORE: {score}</h2>
               </div>
               <div className="mt-4 md:mt-8 flex flex-wrap gap-3 md:gap-4 justify-center">
-                <button onClick={startGame} className="border-4 border-white bg-primary px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
+                <button onClick={() => payAndPlay(isRanked)} className="border-4 border-white bg-primary px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
                   Try Again
                 </button>
+                {!coinsClaimed && runCoins > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <button onClick={convertCoinsToDash} className="border-4 border-white bg-sunny-yellow px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1 flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined">payments</span>
+                      Claim {runCoins} $DASH
+                    </button>
+                    {!hasRevived && (
+                      <button onClick={watchAd} className="border-4 border-white bg-blue-500 px-4 md:px-8 py-2 md:py-4 text-xs md:text-sm font-black uppercase text-white shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1 flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined">play_circle</span>
+                        Watch Ad to Revive & Continue
+                      </button>
+                    )}
+                  </div>
+                )}
                 {!scoreSubmitted && (
                   <button onClick={submitScore} className="border-4 border-white bg-white px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
                     {isConnected ? "Submit Score" : "Connect Wallet"}
@@ -317,6 +553,9 @@ function AppContent() {
         )}
       </div>
 
+      {/* Legal Modals */}
+      <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </OrientationOverlay>
   );
 }

@@ -261,3 +261,35 @@ body.game-active {
   color: var(--text-secondary);
   margin-bottom: 32px;
 }
+
+/* --- DYNAMIC HERO ANIMATIONS --- */
+
+@keyframes run-fast {
+  from { background-position: 0% 0; }
+  to { background-position: 800% 0; }
+}
+
+.animate-run-fast {
+  animation: run-fast 0.6s steps(8) infinite;
+}
+
+@keyframes glitch-text {
+  0% { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+  25% { text-shadow: -2px 0 0 rgba(0,255,150,0.5), 2px 0 0 rgba(255,0,80,0.5); }
+  50% { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+  75% { text-shadow: -2px 0 0 rgba(0,255,150,0.5), 2px 0 0 rgba(255,0,80,0.5); }
+  100% { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+}
+
+.animate-glitch-text {
+  animation: glitch-text 2s infinite linear;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-50%) translateX(0); }
+  50% { transform: translateY(-55%) translateX(-5px); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}

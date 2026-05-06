@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 import React, { useState } from 'react';
 
-const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, onOpenAbout, onOpenProfile }) => {
+const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectWallet, status, prizePool, onOpenAbout, onOpenProfile, onOpenTerms, onOpenPrivacy }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showShopComingSoon, setShowShopComingSoon] = useState(false);
 
@@ -9,7 +9,8 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
         if (!wallet) {
             connectWallet();
         } else {
-            startGame();
+            // For general play click from nav, we default to practice flow
+            payAndPlay(false);
         }
     };
 
@@ -96,34 +97,79 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                                     <span className="material-symbols-outlined text-sm">bolt</span>
                                     <span>Live on Avalanche</span>
                                 </div>
-                                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter uppercase mb-2">
-                                    Escape the <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-600">Glitch.</span><br />
-                                    Run Forever.
-                                </h1>
+                                {/* Dynamic Hero Headline with Pushing Character */}
+                                <div className="relative group mb-8 pt-4">
+                                    {/* The Pushing Character (Static Power Pose - Right Side) */}
+                                    <div className="absolute -right-12 md:-right-20 top-1/2 -translate-y-1/2 w-16 h-16 md:w-24 md:h-24 z-10 pointer-events-none transform rotate-[-15deg] scale-x-[-1]">
+                                        <div className="w-full h-full bg-[url('/player_run_sheet.png')] bg-no-repeat bg-[length:800%_100%] bg-[position:0%_0] drop-shadow-[-4px_0px_0px_rgba(0,255,150,0.5)]"></div>
+                                    </div>
+
+                                    <h1 className="relative text-4xl sm:text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter uppercase pr-4 md:pr-8 border-r-8 border-primary select-none text-right">
+                                        <span className="block hover:-translate-x-2 transition-transform duration-300">Escape the</span>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-600 block animate-glitch-text">Glitch.</span>
+                                        <span className="block hover:-translate-x-1 transition-transform duration-300">Run Forever.</span>
+                                    </h1>
+
+                                    {/* Decorative "Force" lines to emphasize the push from right */}
+                                    <div className="absolute right-0 top-0 h-full w-2 bg-gradient-to-b from-transparent via-primary/30 to-transparent animate-pulse"></div>
+                                </div>
+
+                                <div className="bg-primary text-secondary px-4 py-2 border-2 border-secondary pixel-shadow transform rotate-1 w-fit mb-4 ml-auto">
+                                    <span className="text-sm font-black uppercase tracking-widest">Connect Wallet & Claim 5,000 $DASH Bonus!</span>
+                                </div>
+                                {wallet && !user?.bonusClaimed && (
+                                    <div className="flex items-center gap-4 mb-6 ml-auto w-fit bg-secondary/5 px-4 py-3 border-l-4 border-primary">
+                                        <span className="text-xs font-black uppercase text-gray-600 tracking-wider">
+                                            5,000 $DASH Bonus (Pay Gas)
+                                        </span>
+                                        <button
+                                            onClick={claimBonus}
+                                            className="bg-primary text-secondary px-5 py-1.5 text-xs font-black uppercase border-2 border-secondary pixel-shadow-sm hover:-translate-y-1 active:translate-y-0 transition-all cursor-pointer"
+                                        >
+                                            Claim
+                                        </button>
+                                    </div>
+                                )}
+                                {wallet && user?.bonusClaimed && (
+                                    <div className="flex items-center gap-2 mb-6 text-green-600 font-black uppercase text-xs">
+                                        <span className="material-symbols-outlined">verified</span>
+                                        Starter Bonus Claimed
+                                    </div>
+                                )}
                                 <p className="text-base md:text-lg text-gray-600 font-medium max-w-md font-body leading-relaxed">
                                     Navigate through <strong>7 Glitched Biomes</strong> ranging from Cyber-Sewers to Deep Space.
-                                    Collect fragments to win from the <strong>{prizePool || '0'} AVAX</strong> Prize Pool.
+                                    The weekly prize pool grows by <strong>1,000 $DASH</strong> per runner.
                                 </p>
 
-                                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                                <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-end">
                                     <button
-                                        onClick={startGame}
+                                        onClick={() => payAndPlay(false)}
                                         className="bg-primary text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow pixel-shadow-hover transition-all duration-200 flex items-center justify-center gap-2 active:translate-y-1"
                                     >
                                         <span className="material-symbols-outlined">play_arrow</span>
                                         Practice
                                     </button>
                                     <button
-                                        onClick={payAndPlay}
-                                        className="bg-white text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 active:translate-y-1"
+                                        onClick={() => payAndPlay(true)}
+                                        className="bg-white text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 active:translate-y-1 group relative"
                                     >
                                         <span className="material-symbols-outlined">trophy</span>
                                         Ranked
+                                        <span className="absolute -top-3 -right-3 bg-secondary text-primary text-[8px] px-2 py-1 border-2 border-primary font-black uppercase">1,000 $DASH</span>
                                     </button>
                                 </div>
-                                <div className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest mt-2">
-                                    Current Prize Pool: <span className="text-primary font-black uppercase">{prizePool} AVAX</span>
+                                {status && (
+                                    <div className="mt-4 p-4 bg-secondary text-primary border-4 border-primary pixel-shadow animate-in fade-in slide-in-from-left duration-300 flex items-center gap-3">
+                                        <div className="size-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="font-black uppercase tracking-widest text-xs md:text-sm">{status}</span>
+                                    </div>
+                                )}
+                                <div className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest mt-4 flex items-center gap-4">
+                                    <div>Current Pool: <span className="text-primary font-black uppercase">{prizePool} $DASH</span></div>
+                                    <div className="flex items-center gap-1 text-secondary">
+                                        <span className="material-symbols-outlined text-xs">schedule</span>
+                                        <span>Ends in: 5d 14h 22m</span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full bg-accent-gray border-4 border-secondary pixel-shadow group">
@@ -140,6 +186,54 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                                             <div className="h-full bg-primary w-3/4"></div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* How to Earn Section */}
+                    <section className="px-6 py-16 bg-accent-gray border-y-4 border-secondary">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl md:text-5xl font-black uppercase mb-4 tracking-tighter text-secondary">How to Earn $DASH</h2>
+                                <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Start your journey to the Top 10</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {/* Path 1 */}
+                                <div className="bg-white border-4 border-secondary p-8 pixel-shadow flex flex-col items-center text-center group hover:-translate-y-2 transition-transform">
+                                    <div className="size-16 bg-primary border-4 border-secondary flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+                                        <span className="material-symbols-outlined text-4xl text-secondary font-black uppercase tracking-tight mb-2">card_giftcard</span>
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase mb-3 text-secondary">1. Claim Bonus</h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase leading-relaxed mb-4">
+                                        Connect your wallet and pay a small network fee to mint your <strong>5,000 $DASH</strong> starter pack.
+                                    </p>
+                                    <div className="mt-auto text-[10px] font-black text-primary uppercase">+5,000 $DASH ONCE</div>
+                                </div>
+
+                                {/* Path 2 */}
+                                <div className="bg-white border-4 border-secondary p-8 pixel-shadow flex flex-col items-center text-center group hover:-translate-y-2 transition-transform">
+                                    <div className="size-16 bg-secondary border-4 border-primary flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform text-primary">
+                                        <span className="material-symbols-outlined text-4xl font-black uppercase tracking-tight mb-2">payments</span>
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase mb-3 text-secondary">2. Grind Practice</h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase leading-relaxed mb-4">
+                                        Run in Practice Mode, collect coins, and convert them to <strong>$DASH</strong> by paying gas. No entry fee required!
+                                    </p>
+                                    <div className="mt-auto text-[10px] font-black text-secondary uppercase">UNLIMITED EARNINGS</div>
+                                </div>
+
+                                {/* Path 3 */}
+                                <div className="bg-white border-4 border-secondary p-8 pixel-shadow flex flex-col items-center text-center group hover:-translate-y-2 transition-transform">
+                                    <div className="size-16 bg-yellow-400 border-4 border-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <span className="material-symbols-outlined text-4xl text-secondary font-black uppercase tracking-tight mb-2">workspace_premium</span>
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase mb-3 text-secondary">3. Win Tournament</h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase leading-relaxed mb-4">
+                                        Enter the Ranked Tournament for 1,000 $DASH and compete for the <strong>Top 10</strong> spots to share the weekly pool.
+                                    </p>
+                                    <div className="mt-auto text-[10px] font-black text-yellow-600 uppercase">WIN UP TO 40% OF POOL</div>
                                 </div>
                             </div>
                         </div>
@@ -310,9 +404,50 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                     {/* Leaderboard Section */}
                     <section className="px-6 py-16 md:py-24 bg-white" id="leaderboard">
                         <div className="max-w-4xl mx-auto flex flex-col items-center">
-                            <h2 className="text-3xl md:text-4xl font-black uppercase mb-12 text-center bg-secondary text-white px-8 py-2 inline-block transform -skew-x-12">
+                            <h2 className="text-3xl md:text-4xl font-black uppercase mb-4 text-center bg-secondary text-white px-8 py-2 inline-block transform -skew-x-12">
                                 <span className="transform skew-x-12 inline-block font-black uppercase tracking-tight mb-2">Leaderboard</span>
                             </h2>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Weekly Tournament Payouts</p>
+
+                            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                {/* Distribution Breakdown */}
+                                <div className="border-4 border-secondary p-6 bg-accent-gray pixel-shadow">
+                                    <h3 className="text-sm font-black uppercase mb-4 text-secondary flex items-center gap-2">
+                                        <span className="material-symbols-outlined">payments</span>
+                                        Prize Distribution
+                                    </h3>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
+                                            <span>Rank 1</span>
+                                            <span className="text-primary">40% ({Math.floor(prizePool * 0.4).toLocaleString()} $DASH)</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
+                                            <span>Rank 2</span>
+                                            <span className="text-primary">20% ({Math.floor(prizePool * 0.2).toLocaleString()} $DASH)</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
+                                            <span>Rank 3</span>
+                                            <span className="text-primary">10% ({Math.floor(prizePool * 0.1).toLocaleString()} $DASH)</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
+                                            <span>Rank 4-10</span>
+                                            <span className="text-primary">2% ea. ({Math.floor(prizePool * 0.02).toLocaleString()} $DASH)</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold pt-1 opacity-50">
+                                            <span>Team Pool</span>
+                                            <span>16% ({Math.floor(prizePool * 0.16).toLocaleString()} $DASH)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Runners Counter */}
+                                <div className="border-4 border-secondary p-6 bg-white pixel-shadow flex flex-col justify-center items-center text-center">
+                                    <div className="text-4xl font-black text-secondary mb-1">250</div>
+                                    <div className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">Active Runners This Week</div>
+                                    <div className="mt-4 text-[10px] font-bold text-primary animate-pulse uppercase">+1,000 $DASH added per runner</div>
+                                </div>
+                            </div>
+
                             <div className="w-full border-4 border-secondary bg-white pixel-shadow overflow-x-auto">
                                 <div className="min-w-[500px]">
                                     {/* Table Header */}
@@ -324,12 +459,12 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                                     {/* Row 1 */}
                                     <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-200 items-center hover:bg-primary/10 transition-colors">
                                         <div className="col-span-2 text-center flex justify-center">
-                                            <div className="size-8 bg-yellow-400 border-2 border-black flex items-center justify-center font-bold">1</div>
+                                            <div className="size-8 bg-yellow-400 border-2 border-black flex items-center justify-center font-bold text-black">1</div>
                                         </div>
                                         <div className="col-span-6 flex items-center gap-3">
-                                            <span className="font-bold font-body text-sm md:text-base">CyberNinja_99</span>
+                                            <span className="font-bold font-body text-sm md:text-base text-secondary">CyberNinja_99</span>
                                         </div>
-                                        <div className="col-span-4 text-right font-mono font-bold text-base md:text-lg">8,942,000</div>
+                                        <div className="col-span-4 text-right font-mono font-bold text-base md:text-lg text-secondary">8,942,000</div>
                                     </div>
                                     {/* Placeholder Row */}
                                     <div className="p-4 text-center text-gray-400 text-xs font-bold uppercase tracking-tight mb-2">
@@ -348,14 +483,14 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                             </h2>
                             <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                                 <button
-                                    onClick={startGame}
+                                    onClick={() => payAndPlay(false)}
                                     className="bg-secondary text-primary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-3 active:translate-y-1"
                                 >
                                     <span className="material-symbols-outlined">play_arrow</span>
                                     Practice
                                 </button>
                                 <button
-                                    onClick={payAndPlay}
+                                    onClick={() => payAndPlay(true)}
                                     className="bg-white text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-3 active:translate-y-1"
                                 >
                                     <span className="material-symbols-outlined">trophy</span>
@@ -364,29 +499,36 @@ const LandingPage = ({ startGame, payAndPlay, wallet, connectWallet, prizePool, 
                             </div>
                         </div>
                     </section>
-
-                    {/* Footer */}
-                    <footer className="bg-secondary text-white py-12 px-6">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                            <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">videogame_asset</span>
-                                <span className="font-bold uppercase tracking-widest text-sm font-black uppercase tracking-tight mb-2">Summer Dash</span>
-                            </div>
-                            <div className="flex flex-wrap justify-center gap-6 text-xs md:text-sm text-gray-400 font-body">
-                                <a className="hover:text-primary transition-colors" href="#">Privacy</a>
-                                <a className="hover:text-primary transition-colors font-bold uppercase" href="#">Terms</a>
-                                <a className="hover:text-primary transition-colors font-bold uppercase" href="#">Support</a>
-                            </div>
-                            <div className="text-center text-[10px] text-gray-600 font-mono font-black uppercase tracking-tight mb-2">
-                                Powered by Avalanche
-                            </div>
-                        </div>
-                    </footer>
                 </div>
 
                 {/* Balance Spacer (Desktop Only) - Ensures content center matches viewport center */}
                 <div className="hidden md:flex w-24 shrink-0 pointer-events-none"></div>
             </div>
+            {/* Footer - Minimalist Version from Mockup */}
+            <footer className="bg-[#111] text-white pt-10 pb-2 border-t border-white/5 relative">
+                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 pb-8">
+                    {/* Logo Section */}
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary text-2xl">sports_esports</span>
+                        <span className="text-lg font-black uppercase tracking-widest">Summer Dash</span>
+                    </div>
+
+                    {/* Center Links */}
+                    <div className="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-gray-400">
+                        <button onClick={onOpenPrivacy} className="hover:text-white transition-colors">Privacy</button>
+                        <button onClick={onOpenTerms} className="hover:text-white transition-colors">TERMS</button>
+                        <button className="hover:text-white transition-colors opacity-50 cursor-not-allowed">SUPPORT</button>
+                    </div>
+
+                    {/* Right Attribution */}
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                        POWERED BY <span className="text-gray-300">AVALANCHE</span>
+                    </div>
+                </div>
+
+                {/* Bottom Bright Green Bar */}
+                <div className="h-2 w-full bg-primary"></div>
+            </footer>
         </div>
     );
 };

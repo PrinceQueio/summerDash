@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { audioManager } from './AudioManager';
 
-const Game = ({ onGameOver, onScoreUpdate }) => {
+const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
     const canvasRef = useRef(null);
     const [isStarted, setIsStarted] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -230,10 +230,10 @@ const Game = ({ onGameOver, onScoreUpdate }) => {
 
         // --- STATE ---
         let frameCount = 0;
-        let score = 0;
-        let coinCount = 0;
-        let level = 1;
-        let gameSpeed = 6;
+        let score = initialState?.score || 0;
+        let coinCount = initialState?.coins || 0;
+        let level = initialState?.level || 1;
+        let gameSpeed = 6 + (level - 1) * 0.3; // Restore speed based on level
         let isGameOver = false;
         let lives = 5;
         let invincibilityTimer = 0;
@@ -724,6 +724,13 @@ const Game = ({ onGameOver, onScoreUpdate }) => {
             window.removeEventListener('resize', handleResize);
         };
     }, [imagesLoaded, isStarted]);
+
+    // Handle Auto-Start for Revive
+    useEffect(() => {
+        if (imagesLoaded && initialState && !isStarted) {
+            setIsStarted(true);
+        }
+    }, [imagesLoaded, initialState]);
 
     if (!imagesLoaded) return <div className="text-white">Loading Assets...</div>;
 
