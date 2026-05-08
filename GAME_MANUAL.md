@@ -1,30 +1,31 @@
-# Summer Dash: Field Manual
+# Summer Dash: Field Manual [v1.0.0]
+> **Status:** Production Release v1.0.0
 
-## 🎯 Objective
+## Objective
 Run as far as you can, survive the glitching biomes, and collect **Gold Coins**. In **Ranked Mode**, your high score determines your share of the prize pool.
 
-## 🕹️ Controls
+## Controls
 *   **Jump**: Press `SPACE` or `UP ARROW` (Desktop) / `TAP` Screen (Mobile).
 *   **Double Jump**: Press `Jump` again while in mid-air. Use this to clear large gaps or tall enemies.
 *   **Drop/Fall**: (Physics handled automatically via gravity).
 
-## ⚡ Power-Ups
+## Power-Ups
 Scattered throughout the simulation are cached subroutines (power-ups) to aid your run:
 
-| Icon | Name | Effect |
-| :--- | :--- | :--- |
-| 🛡️ | **Shield Protocol** | Protects you from taking damage **one time**. Active until hit. |
-| ⚡ | **Turbo Boost** | Grants **Invincibility** and increases **Speed** drastically for a short time. |
-| 🧲 | **Magnet** | Automatically pulls nearby **Gold Coins** directly to you. |
+| Name | Effect |
+| :--- | :--- |
+| **Shield Protocol** | Protects you from taking damage **one time**. Active until hit. |
+| **Turbo Boost** | Grants **Invincibility** and increases **Speed** drastically for a short time. |
+| **Magnet** | Automatically pulls nearby **Gold Coins** directly to you. |
 
-## 👾 Hazards
+## Hazards
 *   **Static Glitches**: Spikes, Walls, and Pits on the ground.
 *   **Drone Enemies**:
-    *   🦇 **Bats**: Fly low. Jump over them.
-    *   🐝 **Wasps**: Hover at head-height.
-    *   👻 **Phantoms**: Float high. Undershoot or double-jump carefully.
+    *   **Bats**: Fly low. Jump over them.
+    *   **Wasps**: Hover at head-height.
+    *   **Phantoms**: Float high. Undershoot or double-jump carefully.
 
-## 🌍 Biomies & Progression
+## Biomes & Progression
 As your score increases, you will seamlessly transition (Wrap) to new L1 Subnets (Biomes):
 1.  **City Core** (Start)
 2.  **Toxic Sewers**
