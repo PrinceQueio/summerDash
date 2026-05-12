@@ -293,3 +293,9 @@ body.game-active {
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
 }
+
+/* Override for Remix-style Shop */
+body.shop-active {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}

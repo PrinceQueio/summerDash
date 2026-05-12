@@ -12,6 +12,7 @@ export default {
                 "secondary": "#111813",
                 "background-light": "#ffffff",
                 "background-dark": "#121216",
+                "sunny-yellow": "#FFD700",
                 "accent-gray": "#f3f4f6",
             },
             fontFamily: {

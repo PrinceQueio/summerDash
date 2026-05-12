@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
-const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
+const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCoins, status }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [newUsername, setNewUsername] = useState(user?.username || '');
 
     const [displayLimit, setDisplayLimit] = useState(20);
 
-    const sortedSessions = [...(user.sessions || [])].reverse();
+    const sortedSessions = [...(user.sessions || [])];
     const visibleSessions = sortedSessions.slice(0, displayLimit);
 
     const getXPData = (totalPoints) => {
@@ -100,19 +100,11 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                             </div>
                         </div>
 
-                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-secondary text-white p-6 border-2 border-secondary pixel-shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-primary uppercase mb-1">Total Points</p>
-                                <p className="text-xl font-black font-mono">{user.totalPoints.toLocaleString()}</p>
-                            </div>
+                        <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-primary text-secondary p-6 border-4 border-secondary pixel-shadow-sm text-center">
                                 <p className="text-[10px] font-black uppercase mb-1 opacity-70">$DASH Balance</p>
                                 <p className="text-xl font-black font-mono">{user.dashBalance?.toLocaleString() || 0}</p>
                                 <p className="text-[8px] font-bold uppercase mt-2 opacity-60">*Non-Transferable</p>
-                            </div>
-                            <div className="bg-white p-6 border-4 border-secondary pixel-shadow-sm text-center">
-                                <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Global Level</p>
-                                <p className="text-xl font-black font-mono text-secondary">{user.globalLevel}</p>
                             </div>
                             <div className="bg-accent-gray p-6 border-4 border-secondary pixel-shadow-sm text-center relative overflow-hidden">
                                 <p className="text-[10px] font-bold text-secondary uppercase mb-1">Est. Winnings</p>
@@ -129,8 +121,12 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                     {/* Session History */}
                     <div className="md:col-span-2">
                         {/* Tournament Standing Card */}
-                        <div className="bg-secondary text-white border-4 border-primary p-6 mb-8 pixel-shadow flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="flex items-center gap-4">
+                        <div className="bg-secondary text-white border-4 border-primary p-6 mb-8 pixel-shadow flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+                            {!user.isRanked && (
+                                <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[1px] pointer-events-none"></div>
+                            )}
+
+                            <div className="flex items-center gap-4 z-20">
                                 <div className="size-12 bg-primary flex items-center justify-center text-secondary">
                                     <span className="material-symbols-outlined text-3xl font-black">trophy</span>
                                 </div>
@@ -139,14 +135,30 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                                     <p className="text-xs text-gray-400 uppercase">Weekly Season #1</p>
                                 </div>
                             </div>
-                            <div className="flex gap-4">
-                                <div className="text-right">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Projected Share</p>
-                                    <p className="text-xl font-black font-mono text-primary">0 $DASH</p>
-                                </div>
-                                <button disabled className="bg-gray-700 text-gray-500 border-2 border-gray-600 px-4 py-2 text-xs font-black uppercase tracking-wider cursor-not-allowed">
-                                    Claim Pool
-                                </button>
+
+                            <div className="flex gap-6 items-center z-20">
+                                {user.isRanked ? (
+                                    <>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Current Rank</p>
+                                            <p className="text-xl font-black font-mono text-primary">#{rank || '??'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Est. Share</p>
+                                            <p className="text-xl font-black font-mono text-white">{(rank === 1 ? 5000 : rank <= 10 ? 1000 : 100).toLocaleString()} $DASH</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-end gap-2">
+                                        <p className="text-[10px] font-bold text-red-400 uppercase animate-pulse">NOT PARTICIPATING</p>
+                                        <button 
+                                            onClick={onJoinTournament}
+                                            className="bg-primary text-secondary border-4 border-secondary px-6 py-2 text-xs font-black uppercase tracking-wider hover:bg-white transition-colors"
+                                        >
+                                            STAKE 1,000 $DASH TO JOIN
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -163,20 +175,20 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                                 <div className="divide-y-2 divide-gray-100">
                                     <div className="grid grid-cols-4 p-4 bg-gray-50 text-[10px] font-black uppercase text-gray-500">
                                         <div>Date</div>
-                                        <div className="text-right">Score</div>
+                                        <div className="text-right">Obstacles</div>
                                         <div className="text-right">Level</div>
                                         <div className="text-right">Reward</div>
                                     </div>
                                     {visibleSessions.map((session, i) => (
                                         <div key={i} className="grid grid-cols-4 p-4 items-center hover:bg-primary/5 transition-colors">
                                             <div className="text-xs font-mono font-bold">{new Date(session.date).toLocaleDateString()}</div>
-                                            <div className="text-right font-black text-sm">{session.score}</div>
+                                            <div className="text-right text-xs font-bold">{session.obstacles || 0}</div>
                                             <div className="text-right text-xs">LVL {session.level}</div>
                                             <div className="text-right flex flex-col items-end">
                                                 <div className="text-[10px] font-bold text-primary animate-pulse">+$DASH PENDING</div>
                                                 {session.txHash && (
                                                     <a 
-                                                        href={`https://testnet.snowtrace.io/tx/${session.txHash}`} 
+                                                        href={`https://snowtrace.io/tx/${session.txHash}`} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         className="text-[8px] text-gray-400 hover:text-primary transition-colors flex items-center gap-0.5"
@@ -204,45 +216,152 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect }) => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Financial Ledger (Coins) */}
+                        <div className="mt-12 flex flex-col gap-6">
+                            <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">account_balance</span>
+                                Financial Ledger
+                            </h3>
+                            <div className="bg-white border-4 border-secondary overflow-hidden pixel-shadow">
+                                <div className="divide-y-2 divide-gray-100">
+                                    <div className="grid grid-cols-4 p-4 bg-gray-50 text-[10px] font-black uppercase text-gray-500">
+                                        <div>Date</div>
+                                        <div className="text-right">Coins Earned</div>
+                                        <div className="text-right">Value (0.1x)</div>
+                                        <div className="text-right">Status</div>
+                                    </div>
+                                    {user.sessions && user.sessions.length > 0 ? (
+                                        visibleSessions.map((session, i) => (
+                                            <div key={i} className="grid grid-cols-4 p-4 items-center">
+                                                <div className="text-xs font-mono font-bold">{new Date(session.date).toLocaleDateString()}</div>
+                                                <div className="text-right font-black text-sm text-primary">+{session.coins || 0}</div>
+                                                <div className="text-right text-[10px] font-bold">{Math.floor((session.coins || 0) * 0.1)} $DASH</div>
+                                                <div className="text-right">
+                                                    <span className={`text-[9px] font-black px-2 py-1 border ${session.claimed ? 'bg-green-100 text-green-700 border-green-700' : 'bg-gray-100 text-gray-500 border-gray-300'}`}>
+                                                        {session.claimed ? 'MINTED' : 'IN WALLET'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-10 text-center">
+                                            <p className="text-gray-400 font-bold uppercase text-xs">No transaction history</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Rank Progress - MOVED HERE */}
+                        <div className="mt-12 flex flex-col gap-6">
+                            <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">military_tech</span>
+                                Rank Progress
+                            </h3>
+                            <div className="bg-white border-4 border-secondary p-6 pixel-shadow relative overflow-hidden group">
+                                {/* Coming Soon Overlay */}
+                                <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[2px] flex items-center justify-center opacity-100 transition-opacity">
+                                    <div className="bg-secondary text-primary border-4 border-primary px-6 py-3 pixel-shadow rotate-[-5deg] font-black uppercase text-xl tracking-tighter">
+                                        Coming Soon
+                                    </div>
+                                </div>
+
+                                <div className="mb-6 opacity-40 grayscale">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <p className="text-xs font-bold uppercase">To Level {xpData.level + 1}</p>
+                                        <p className="text-[10px] font-mono font-bold text-gray-500">{xpData.currentLevelXP.toLocaleString()} / {xpData.xpForNextLevel.toLocaleString()} EXP</p>
+                                    </div>
+                                    <div className="h-4 bg-gray-100 border-2 border-secondary relative overflow-hidden">
+                                        <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${xpData.progress}%` }}></div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 opacity-40 grayscale">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase border-b-2 border-gray-100 pb-1">Mastered Biomes</p>
+                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                                        {Array.from({ length: 20 }, (_, i) => i + 1).map(i => {
+                                            const isMastered = xpData.level >= i;
+                                            const isActive = xpData.level === i - 1;
+
+                                            return (
+                                                <div key={i} className={`aspect-square flex items-center justify-center border-2 transition-all duration-300 ${isMastered ? 'bg-secondary text-primary border-secondary pixel-shadow-sm' :
+                                                    isActive ? 'bg-white text-secondary border-4 border-secondary animate-pulse' :
+                                                        'bg-gray-50 text-gray-300 border-dashed border-gray-200'
+                                                    }`}>
+                                                    <span className="material-symbols-outlined text-sm">
+                                                        {isMastered ? 'verified' : isActive ? 'lock_open' : 'lock'}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Badge/Level Progress */}
+                    {/* Bank & Progress */}
                     <div className="flex flex-col gap-6">
+                        {/* THE SUMMER DASH ATM (BANK) */}
                         <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">military_tech</span>
-                            Rank Progress
+                            <span className="material-symbols-outlined text-primary">payments</span>
+                            $DASH Bank (ATM)
                         </h3>
-                        <div className="bg-white border-4 border-secondary p-6 pixel-shadow">
-                            <div className="mb-6">
-                                <div className="flex justify-between items-end mb-2">
-                                    <p className="text-xs font-bold uppercase">To Level {xpData.level + 1}</p>
-                                    <p className="text-[10px] font-mono font-bold text-gray-500">{xpData.currentLevelXP.toLocaleString()} / {xpData.xpForNextLevel.toLocaleString()} EXP</p>
+                        <div className="bg-secondary text-white border-4 border-primary p-6 pixel-shadow relative overflow-hidden group">
+                            <div className="absolute -top-4 -right-4 size-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+                            
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-center mb-4">
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">Available Coins</p>
+                                    <span className="material-symbols-outlined text-primary animate-pulse">toll</span>
                                 </div>
-                                <div className="h-4 bg-gray-100 border-2 border-secondary relative overflow-hidden">
-                                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${xpData.progress}%` }}></div>
+                                
+                                <h2 className="text-4xl font-black font-mono text-white mb-2">
+                                    {user.gameCoins?.toLocaleString() || 0}
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between text-[8px] font-bold uppercase text-gray-400 mb-1">
+                                            <span>Progress to 1k Unit</span>
+                                            <span>{(user.gameCoins % 1000) || 0} / 1,000</span>
+                                        </div>
+                                        <div className="h-2 bg-black border border-primary/30 relative overflow-hidden">
+                                            <div 
+                                                className="h-full bg-primary transition-all duration-500 shadow-[0_0_10px_#FFD700]" 
+                                                style={{ width: `${Math.min(100, ((user.gameCoins % 1000) / 1000) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={onConvertCoins}
+                                        disabled={!user.gameCoins || user.gameCoins < 1000}
+                                        className={`w-full py-4 text-sm font-black uppercase tracking-widest border-4 pixel-shadow transition-all flex items-center justify-center gap-2
+                                            ${(user.gameCoins >= 1000) 
+                                                ? 'bg-primary text-secondary border-white hover:bg-white hover:scale-[1.02] active:translate-y-1' 
+                                                : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'}`}
+                                    >
+                                        <span className="material-symbols-outlined">account_balance_wallet</span>
+                                        {user.gameCoins >= 1000 ? `Exchange for ${Math.floor(user.gameCoins / 1000) * 100} $DASH` : 'Need 1,000 Coins'}
+                                    </button>
+                                    
+                                    <p className="text-[7px] font-bold text-center text-gray-500 uppercase">
+                                        Fee: 0.05 AVAX per claim • Instant Mainnet Mint
+                                    </p>
                                 </div>
                             </div>
-
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase border-b-2 border-gray-100 pb-1">Mastered Biomes</p>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {Array.from({ length: 20 }, (_, i) => i + 1).map(i => {
-                                        const isMastered = xpData.level >= i;
-                                        const isActive = xpData.level === i - 1;
-
-                                        return (
-                                            <div key={i} className={`aspect-square flex items-center justify-center border-2 transition-all duration-300 ${isMastered ? 'bg-secondary text-primary border-secondary pixel-shadow-sm' :
-                                                isActive ? 'bg-white text-secondary border-4 border-secondary animate-pulse' :
-                                                    'bg-gray-50 text-gray-300 border-dashed border-gray-200'
-                                                }`}>
-                                                <span className="material-symbols-outlined text-sm">
-                                                    {isMastered ? 'verified' : isActive ? 'lock_open' : 'lock'}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
+                            
+                            {/* Status Overlay for Bank */}
+                            {status && (
+                                <div className="absolute inset-0 bg-secondary/90 backdrop-blur-sm flex items-center justify-center p-4 text-center z-50">
+                                    <div className="space-y-3">
+                                        <div className="inline-block animate-spin size-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-tight">{status}</p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

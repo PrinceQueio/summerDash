@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// VERSION: 1.0.4 - FIXED ESTIMATED_LEVEL BUG
+import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useAppKitAccount, useAppKit, useAppKitProvider } from '@reown/appkit/react';
 import Game from './Game';
@@ -8,13 +9,15 @@ import GameContainer from './GameContainer';
 import AboutPage from './AboutPage';
 import OrientationOverlay from './OrientationOverlay';
 import ProfilePage from './ProfilePage';
+import ShopPage from './ShopPage';
 import { TermsOfService, PrivacyPolicy } from './LegalModals';
+import { supabase } from './lib/supabase'; // NEW: Global Identity
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 const RANKED_FEE_DASH = 1000; 
 const INITIAL_DASH = 5000;
 const DAILY_REWARD = 500;
-const TESTNET_ID = 88882;
+const CHAIN_ID = 43114; // Avalanche C-Chain Mainnet
 
 const generateRandomUsername = () => {
   const prefixes = ['Runner', 'Glitch', 'Cyber', 'Dash', 'Block', 'Avax', 'Sewer', 'Sky'];
@@ -67,44 +70,88 @@ function AppContent() {
 
   const wallet = isConnected ? address : null;
 
-  // Load/Save User Profile
+  // Load/Save User Profile (Cloud Synced)
   useEffect(() => {
     if (isConnected && address) {
-      const savedStats = JSON.parse(localStorage.getItem(`sd_user_${address.toLowerCase()}`));
-      if (savedStats) {
-        const syncedUser = {
-          ...savedStats,
-          dashBalance: savedStats.dashBalance ?? 0,
-          bonusClaimed: savedStats.bonusClaimed ?? false,
-          lastDailyClaim: savedStats.lastDailyClaim ?? 0,
-          globalLevel: calculateLevelFromXP(savedStats.totalPoints || 0)
-        };
-        setUser(syncedUser);
-      } else {
-        const newUser = {
-          address,
-          username: generateRandomUsername(),
-          usernameChanged: false,
-          totalPoints: 0,
-          dashBalance: 0, // Starts at 0, must claim
-          bonusClaimed: false,
-          lastDailyClaim: 0,
-          globalLevel: calculateLevelFromXP(0),
-          sessions: []
-        };
-        setUser(newUser);
-        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(newUser));
-      }
+      const syncCloudProfile = async () => {
+        try {
+          const { data: cloudProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('address', address.toLowerCase())
+            .single();
+
+          const localKey = `sd_user_${address.toLowerCase()}`;
+          const savedStats = JSON.parse(localStorage.getItem(localKey)) || {};
+
+          if (cloudProfile) {
+            // Cloud has the identity
+            const syncedUser = {
+              ...savedStats,
+              address,
+              username: cloudProfile.username,
+              usernameChanged: true,
+              totalPoints: savedStats.totalPoints || 0,
+              dashBalance: savedStats.dashBalance || 0,
+              gameCoins: savedStats.gameCoins || 0,
+              globalLevel: calculateLevelFromXP(savedStats.totalPoints || 0),
+              sessions: savedStats.sessions || []
+            };
+            setUser(syncedUser);
+            localStorage.setItem(localKey, JSON.stringify(syncedUser));
+          } else if (Object.keys(savedStats).length > 0) {
+            // Local exists, sync to cloud
+            setUser(savedStats);
+            await supabase.from('profiles').upsert({ 
+              address: address.toLowerCase(), 
+              username: savedStats.username,
+              game_coins: savedStats.gameCoins || 0 
+            });
+          } else {
+            // Brand new player
+            const newUser = {
+              address,
+              username: generateRandomUsername(),
+              usernameChanged: false,
+              totalPoints: 0,
+              dashBalance: 0,
+              gameCoins: 0,
+              bonusClaimed: false,
+              lastDailyClaim: 0,
+              globalLevel: calculateLevelFromXP(0),
+              sessions: []
+            };
+            setUser(newUser);
+            localStorage.setItem(localKey, JSON.stringify(newUser));
+            await supabase.from('profiles').insert({ 
+              address: address.toLowerCase(), 
+              username: newUser.username 
+            });
+          }
+        } catch (err) {
+          console.error("Cloud Sync Error:", err);
+        }
+      };
+      syncCloudProfile();
     } else {
       setUser(null);
     }
   }, [isConnected, address]);
 
-  const updateUsername = (name) => {
+  const updateUsername = async (name) => {
     if (!user) return;
     const updatedUser = { ...user, username: name, usernameChanged: true };
     setUser(updatedUser);
     localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+    
+    // Sync to Cloud
+    await supabase
+      .from('profiles')
+      .upsert({ 
+        address: address.toLowerCase(), 
+        username: name,
+        game_coins: user.gameCoins || 0 
+      });
   };
 
   // Fetch Prize Pool ($DASH)
@@ -123,9 +170,28 @@ function AppContent() {
     }
   };
 
+  const [leaderboard, setLeaderboard] = useState([]);
+
+  // Fetch Leaderboard from Supabase
+  const fetchLeaderboard = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .order('score', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      setLeaderboard(data || []);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+    }
+  };
+
   useEffect(() => {
     if (isConnected) {
       fetchPrizePool();
+      fetchLeaderboard();
     } else {
       setStatus("");
     }
@@ -300,7 +366,7 @@ function AppContent() {
   };
 
   const [lastLevelReached, setLastLevelReached] = useState(1);
-  const handleGameOver = (scoreInfo) => {
+  const onRunComplete = async (scoreInfo) => {
     // Receive { score (obstacles), coins } from Game.jsx
     const totalPoints = (scoreInfo.score || 0) + (scoreInfo.coins || 0);
 
@@ -309,9 +375,38 @@ function AppContent() {
     setRunObstacles(scoreInfo.score || 0);
 
     // Simple logic to detect level from score if Game doesn't send it yet
-    const estimatedLevel = Math.max(1, Math.floor((scoreInfo.score || 0) / 50) + 1);
-    setLastLevelReached(estimatedLevel);
+    setLastLevelReached(scoreInfo.level || 1);
     setGameState('GAMEOVER');
+
+    // NEW: Save practice coins and session history to local & cloud
+    if (user) {
+      const newSession = {
+        date: new Date().toISOString(),
+        points: totalPoints,
+        obstacles: scoreInfo.score || 0,
+        coins: scoreInfo.coins || 0,
+        level: scoreInfo.level || 1
+      };
+
+      const updatedUser = {
+        ...user,
+        gameCoins: (user.gameCoins || 0) + (scoreInfo.coins || 0),
+        totalPoints: (user.totalPoints || 0) + totalPoints,
+        sessions: [newSession, ...(user.sessions || [])].slice(0, 50), // Keep last 50
+        lastValidation: scoreInfo.validation
+      };
+
+      setUser(updatedUser);
+      localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+      
+      // NEW: Immediate Cloud Sync of Coins & Best Score
+      await supabase.from('profiles').upsert({
+        address: address.toLowerCase(),
+        game_coins: updatedUser.gameCoins,
+        total_points: updatedUser.totalPoints,
+        last_run_score: scoreInfo.score
+      }, { onConflict: 'address' });
+    }
   };
 
   const convertCoinsToDash = async () => {
@@ -319,37 +414,66 @@ function AppContent() {
       connectWallet();
       return;
     }
-    if (runCoins <= 0) return alert("No coins to claim!");
+    
+    const availableCoins = user?.gameCoins || 0;
+    if (availableCoins < 1000) return alert("You need at least 1,000 Coins to convert!");
 
     try {
-      setStatus(`Preparing Coin Conversion (${runCoins} Coins)...`);
+      setStatus(`Preparing Coin Conversion (${availableCoins} Coins)...`);
       const provider = new ethers.BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
 
-      const abi = ["function convertCoinsToDash(uint256 coinAmount) public"];
+      setStatus(`Fetching Secure Signature...`);
+      const runId = ethers.id(`run_${Date.now()}_${address}`); // Generate unique Run ID
+
+      const response = await fetch('/api/sign-claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerAddress: address,
+          gameCoins: availableCoins,
+          runId: runId,
+          contractAddress: CONTRACT_ADDRESS,
+          chainId: CHAIN_ID
+        })
+      });
+
+      const { signature, error } = await response.json();
+      if (error) throw new Error(error);
+
+      // Updated ABI for the new contract function
+      const abi = ["function convertPracticeCoins(uint256 _gameCoins, bytes32 _runId, bytes memory _signature) public payable"];
       const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
 
-      setStatus(`Minting ${runCoins} $DASH on Avalanche...`);
-      const tx = await contract.convertCoinsToDash(runCoins);
+      setStatus(`Claiming Dash (Fee: 0.05 AVAX)...`);
+      // 0.05 AVAX fee as requested
+      const tx = await contract.convertPracticeCoins(availableCoins, runId, signature, {
+        value: ethers.parseEther("0.05")
+      });
       
-      setStatus("Confirming Transaction...");
+      setStatus("Awaiting Finality on Avalanche...");
       await tx.wait();
 
       if (user) {
+        // 10% conversion: 1000 coins -> 100 DASH
+        const dashToMint = Math.floor(availableCoins * 0.1);
         const updatedUser = {
           ...user,
-          dashBalance: user.dashBalance + runCoins
+          dashBalance: user.dashBalance + dashToMint,
+          gameCoins: 0, // Reset coins after successful claim
+          sessions: (user.sessions || []).map(s => ({ ...s, claimed: true }))
         };
         setUser(updatedUser);
         localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+        setStatus(`Successfully Claimed ${dashToMint} $DASH!`);
       }
 
       setCoinsClaimed(true);
-      setStatus("Coins Converted to $DASH!");
       setTimeout(() => setStatus(""), 3000);
     } catch (err) {
       console.error(err);
-      setStatus("Conversion Failed");
+      const errorMsg = err.reason || err.message || "Transaction failed";
+      setStatus("Claim Failed: " + (errorMsg.length > 40 ? errorMsg.substring(0, 40) + "..." : errorMsg));
       setTimeout(() => setStatus(""), 3000);
     }
   };
@@ -386,16 +510,39 @@ function AppContent() {
       const scoreAbi = ["function submitScore(uint256 score) public"];
       const contract = new ethers.Contract(CONTRACT_ADDRESS, scoreAbi, signer);
 
+      // ANTI-CHEAT: Client-side Sanity Check
+      const v = user?.lastValidation;
+      if (v) {
+        // Example: If score > 1000 but duration < 30 seconds, it's impossible
+        if (v.s > 1000 && v.d < 30000) {
+            throw new Error("Invalid run metrics detected. Score discarded.");
+        }
+      }
+
       setStatus(`Recording Score (${score}) on Avalanche...`);
       
-      // We call the submitScore function on the contract
-      // This makes the score immutable and verifiable by everyone
       const tx = await contract.submitScore(score);
       
       setStatus("Awaiting Block Finality...");
       await tx.wait();
 
       setStatus("Score Immutably Recorded!");
+
+      // NEW: Sync to Supabase Leaderboard
+      try {
+        await supabase.from('leaderboard').upsert({
+          address: address.toLowerCase(),
+          username: user?.username || "Anonymous",
+          score: score,
+          timestamp: new Date().toISOString(),
+          metadata: user?.lastValidation // Store the proof for admin review
+        }, { onConflict: 'address' }); 
+        
+        fetchLeaderboard(); // Refresh local list
+      } catch (supaErr) {
+        console.error("Supabase Leaderboard Error:", supaErr);
+      }
+
       setShowSubmissionToast(true);
       setScoreSubmitted(true);
       setTimeout(() => {
@@ -429,6 +576,80 @@ function AppContent() {
     }
   };
 
+  const syncProgress = async (currentUser) => {
+    if (!currentUser || !address) return;
+    try {
+      console.log("Syncing progress to cloud...");
+      await supabase.from('profiles').upsert({
+        address: address.toLowerCase(),
+        game_coins: currentUser.gameCoins,
+        total_points: currentUser.totalPoints,
+        username: currentUser.username
+      }, { onConflict: 'address' });
+      console.log("Cloud sync successful!");
+    } catch (err) {
+      console.error("Cloud sync failed:", err);
+    }
+  };
+
+  const [userRank, setUserRank] = useState(null);
+
+  const fetchUserRank = async () => {
+    if (!address) return;
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('score')
+        .order('score', { ascending: false });
+
+      if (data) {
+        const index = data.findIndex(item => item.address?.toLowerCase() === address.toLowerCase());
+        setUserRank(index !== -1 ? index + 1 : null);
+      }
+    } catch (err) {
+      console.error("Rank fetch error:", err);
+    }
+  };
+
+  const joinTournament = async () => {
+    if (!user || user.dashBalance < 1000) {
+      return alert("Insufficient $DASH! You need 1,000 $DASH to join the tournament.");
+    }
+
+    try {
+      setStatus("Joining Tournament... (-1,000 $DASH)");
+      const updatedUser = {
+        ...user,
+        dashBalance: user.dashBalance - 1000,
+        isRanked: true
+      };
+      
+      const { error } = await supabase.from('profiles').upsert({
+        address: address.toLowerCase(),
+        dash_balance: updatedUser.dashBalance,
+        is_ranked: true
+      }, { onConflict: 'address' });
+
+      if (error) throw error;
+
+      setUser(updatedUser);
+      localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+      setStatus("Tournament Unlocked! Good luck!");
+      fetchUserRank();
+      setTimeout(() => setStatus(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to join tournament.");
+    }
+  };
+
+  useEffect(() => {
+    if (isConnected && user) {
+        syncProgress(user);
+        fetchUserRank();
+    }
+  }, [isConnected]);
+
   // State Switching Logic
   if (gameState === 'START') {
     if (currentView === 'ABOUT') {
@@ -452,11 +673,18 @@ function AppContent() {
             onBack={() => setCurrentView('LANDING')}
             onUpdateUsername={updateUsername}
             onDisconnect={() => open({ view: 'Account' })}
+            onConvertCoins={convertCoinsToDash}
+            onJoinTournament={joinTournament}
+            rank={userRank}
+            status={status}
           />
           <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
           <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
         </>
       );
+    }
+    if (currentView === 'SHOP') {
+      return <ShopPage onBack={() => setCurrentView('LANDING')} />;
     }
     return (
       <>
@@ -465,15 +693,36 @@ function AppContent() {
           payAndPlay={payAndPlay}
           claimBonus={claimBonus}
           user={user}
-          wallet={wallet}
+          wallet={address}
           connectWallet={connectWallet}
           status={status}
+          setStatus={setStatus}
           prizePool={prizePool}
+          leaderboard={leaderboard}
           onOpenAbout={() => setCurrentView('ABOUT')}
           onOpenProfile={() => setCurrentView('PROFILE')}
+          onOpenShop={() => setCurrentView('SHOP')}
           onOpenTerms={() => setShowTerms(true)}
           onOpenPrivacy={() => setShowPrivacy(true)}
         />
+        
+        {/* Floating Social Link */}
+        <a 
+          href="https://x.com/TheSummerDash" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-[60] group flex items-center gap-3"
+        >
+          <span className="bg-secondary text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border-2 border-primary pixel-shadow opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+            Follow us on X
+          </span>
+          <div className="size-12 bg-primary text-secondary border-4 border-secondary flex items-center justify-center pixel-shadow hover:scale-110 active:scale-95 transition-all">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </div>
+        </a>
+
         <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />
         <PrivacyPolicy isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
       </>
@@ -487,9 +736,9 @@ function AppContent() {
         {gameState === 'PLAYING' && (
           <GameContainer
             key={gameKey}
-            onGameOver={handleGameOver}
+            onRunComplete={onRunComplete}
             setScore={setScore}
-            initialState={hasRevived ? { score: runObstacles, coins: runCoins, level: lastLevelReached } : null}
+            initialState={hasRevived ? { score: runObstacles, coins: runCoins, level: lastLevelReached, lives: 1 } : null}
             onExit={() => setGameState('START')}
           />
         )}
@@ -513,27 +762,23 @@ function AppContent() {
                 <button onClick={() => payAndPlay(isRanked)} className="border-4 border-white bg-primary px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
                   Try Again
                 </button>
-                {!coinsClaimed && runCoins > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <button onClick={convertCoinsToDash} className="border-4 border-white bg-sunny-yellow px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1 flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">payments</span>
-                      Claim {runCoins} $DASH
-                    </button>
-                    {!hasRevived && (
-                      <button onClick={watchAd} className="border-4 border-white bg-blue-500 px-4 md:px-8 py-2 md:py-4 text-xs md:text-sm font-black uppercase text-white shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined">play_circle</span>
-                        Watch Ad to Revive & Continue
-                      </button>
-                    )}
-                  </div>
-                )}
-                {!scoreSubmitted && (
-                  <button onClick={submitScore} className="border-4 border-white bg-white px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-black shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
-                    {isConnected ? "Submit Score" : "Connect Wallet"}
+
+                {/* Simplified Info Block instead of buttons */}
+                <div className="w-full bg-white/5 border-2 border-white/20 p-4 mt-2">
+                  <p className="text-xs md:text-sm font-bold opacity-80 uppercase leading-relaxed">
+                    Coins & Progress Saved! <br/>
+                    Visit your <span className="text-primary">Profile</span> to convert Coins & Submit to Leaderboard.
+                  </p>
+                </div>
+
+                {!hasRevived && (
+                  <button onClick={watchAd} className="border-4 border-white bg-blue-500 px-4 md:px-8 py-2 md:py-4 text-xs md:text-sm font-black uppercase text-white shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1 flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined">play_circle</span>
+                    Watch Ad to Revive & Continue
                   </button>
                 )}
-                <button onClick={() => setGameState('START')} className="border-4 border-white bg-gray-600 px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-white shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
-                  Home
+                <button onClick={() => { setGameState('START'); setCurrentView('PROFILE'); }} className="border-4 border-white bg-gray-600 px-4 md:px-8 py-2 md:py-4 text-base md:text-xl font-black uppercase text-white shadow-pixel hover:shadow-pixel-hover hover:-translate-y-1 transition-transform active:translate-y-1">
+                  Profile
                 </button>
               </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import Game from './Game';
 
-const GameContainer = ({ onGameOver, setScore, onExit, initialState }) => {
+const GameContainer = ({ onRunComplete, setScore, onExit, initialState }) => {
     return (
         <div className="w-full h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden">
 
@@ -14,7 +14,7 @@ const GameContainer = ({ onGameOver, setScore, onExit, initialState }) => {
 
             {/* Game Canvas */}
             <div className="z-10 w-full h-full flex items-center justify-center relative">
-                <Game onGameOver={onGameOver} onScoreUpdate={setScore} initialState={initialState} />
+                <Game onGameOver={onRunComplete} onScoreUpdate={setScore} initialState={initialState} />
 
                 {/* Quit Button (Always visible or only on pause?) - Let's keep it simple for now, maybe top right */}
                 <button

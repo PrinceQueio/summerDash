@@ -229,13 +229,25 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
         let GROUND_Y = canvas.height - 40;
 
         // --- STATE ---
+        // --- STATE (Anti-Cheat: Encapsulated Vault) ---
         let frameCount = 0;
-        let score = initialState?.score || 0;
-        let coinCount = initialState?.coins || 0;
+        const vault = {
+            _s: initialState?.score || 0, // score
+            _c: initialState?.coins || 0, // coins
+            _v: [], // verification log
+            _t: Date.now() // start time
+        };
+
+        const recordEvent = (type, value) => {
+            vault._v.push({ t: Date.now() - vault._t, type, val: value });
+            // Keep log size manageable but sufficient for validation
+            if (vault._v.length > 500) vault._v.shift();
+        };
+
         let level = initialState?.level || 1;
-        let gameSpeed = 6 + (level - 1) * 0.3; // Restore speed based on level
+        let gameSpeed = 6 + (level - 1) * 0.3; 
         let isGameOver = false;
-        let lives = 5;
+        let lives = initialState?.lives || 3;
         let invincibilityTimer = 0;
         let boostTimer = 0;
         let magnetTimer = 0;
@@ -442,8 +454,8 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
                         let type = 'ground';
                         let yPos = GROUND_Y - height;
 
-                        // 30% Chance to spawn flying enemy if score > 10
-                        if (score > 10 && Math.random() < 0.3) {
+                        // 30% Chance to spawn flying enemy if vault._s > 10
+                        if (vault._s > 10 && Math.random() < 0.3) {
                             const flyers = ['bat', 'wasp', 'ghost'];
                             type = flyers[Math.floor(Math.random() * flyers.length)];
                             height = 40; // Smaller hitbox for flyer
@@ -502,32 +514,49 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
 
                                 // NEW: Coin Penalty System
                                 if (obs.type === 'bat') {
-                                    coinCount = Math.max(0, coinCount - 100);
+                                    vault._c = Math.max(0, vault._c - 100);
                                 } else if (obs.type === 'wasp') {
-                                    coinCount = Math.max(0, coinCount - 200);
+                                    vault._c = Math.max(0, vault._c - 200);
                                 } else if (obs.type === 'ghost') {
-                                    coinCount = Math.floor(coinCount / 2);
+                                    vault._c = Math.floor(vault._c / 2);
                                 }
+                                recordEvent('hit', obs.type);
 
                                 for (let k = 0; k < 10; k++) particles.push(new Particle(player.x, player.y));
 
                                 if (lives <= 0) {
                                     audioManager.playGameOver();
                                     isGameOver = true;
-                                    onGameOver({ score, coins: coinCount });
+                                    
+                                    // Anti-Cheat: Generate a basic hash of the run
+                                    const runDuration = Date.now() - vault._t;
+                                    const validation = {
+                                        s: vault._s,
+                                        c: vault._c,
+                                        d: runDuration,
+                                        v: btoa(JSON.stringify(vault._v.slice(-20))) // Sample of recent events
+                                    };
+                                    
+                                    onGameOver({ 
+                                        score: vault._s, 
+                                        coins: vault._c,
+                                        level: level,
+                                        validation
+                                    });
                                 }
                             }
                         }
                     }
 
                     if (obs.x + obs.width < player.x && !obs.passed) {
-                        score++;
+                        vault._s++;
+                        recordEvent('obs', vault._s);
                         obs.passed = true;
-                        onScoreUpdate(score);
-                        if (score % 10 === 0) gameSpeed += 0.3;
+                        onScoreUpdate(vault._s);
+                        if (vault._s % 10 === 0) gameSpeed += 0.3;
 
-                        const levelThreshold = 50; // User wants 50 obstacles per level
-                        const calculatedLevel = Math.min(30, Math.floor(score / levelThreshold) + 1);
+                        const levelThreshold = 50; 
+                        const calculatedLevel = Math.min(30, Math.floor(vault._s / levelThreshold) + 1);
 
                         if (calculatedLevel > level) {
                             level = calculatedLevel;
@@ -635,7 +664,8 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
                             c.active = false;
                             // Update: 10 coins normally, 15 during boost
                             const points = boostTimer > 0 ? 15 : 10;
-                            coinCount += points;
+                            vault._c += points;
+                            recordEvent('coin', vault._c);
                             audioManager.playCollect();
                         }
                     }
@@ -678,13 +708,13 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
                 // Score
                 ctx.lineWidth = 4;
                 ctx.font = 'bold 30px Arial';
-                ctx.strokeText(`Score: ${score}`, 20, 65);
-                ctx.fillText(`Score: ${score}`, 20, 65);
+                ctx.strokeText(`Score: ${vault._s}`, 20, 65);
+                ctx.fillText(`Score: ${vault._s}`, 20, 65);
 
                 // Coin Count
                 ctx.drawImage(coinImg.current, 20, 135, 25, 25);
-                ctx.strokeText(`${coinCount}`, 50, 158);
-                ctx.fillText(`${coinCount}`, 50, 158);
+                ctx.strokeText(`${vault._c}`, 50, 158);
+                ctx.fillText(`${vault._c}`, 50, 158);
 
                 // Lives
                 for (let i = 0; i < lives; i++) {

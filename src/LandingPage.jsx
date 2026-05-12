@@ -1,9 +1,9 @@
 /* eslint-disable react/no-unknown-property */
 import React, { useState } from 'react';
 
-const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectWallet, status, prizePool, onOpenAbout, onOpenProfile, onOpenTerms, onOpenPrivacy }) => {
+const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectWallet, status, setStatus, prizePool, leaderboard = [], onOpenAbout, onOpenProfile, onOpenShop, onOpenTerms, onOpenPrivacy }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showShopComingSoon, setShowShopComingSoon] = useState(false);
+    const [shopStatus, setShopStatus] = useState('');
 
     const handlePlayClick = () => {
         if (!wallet) {
@@ -150,12 +150,12 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                         Practice
                                     </button>
                                     <button
-                                        onClick={() => payAndPlay(true)}
-                                        className="bg-white text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 active:translate-y-1 group relative"
+                                        disabled
+                                        className="bg-gray-100 text-gray-400 h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 cursor-not-allowed group relative"
                                     >
-                                        <span className="material-symbols-outlined">trophy</span>
+                                        <span className="material-symbols-outlined">lock</span>
                                         Ranked
-                                        <span className="absolute -top-3 -right-3 bg-secondary text-primary text-[8px] px-2 py-1 border-2 border-primary font-black uppercase">1,000 $DASH</span>
+                                        <span className="absolute -top-3 -right-3 bg-gray-200 text-gray-500 text-[8px] px-2 py-1 border-2 border-gray-400 font-black uppercase">Coming Soon</span>
                                     </button>
                                 </div>
                                 {status && (
@@ -168,7 +168,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                     <div>Current Pool: <span className="text-primary font-black uppercase">{prizePool} $DASH</span></div>
                                     <div className="flex items-center gap-1 text-secondary">
                                         <span className="material-symbols-outlined text-xs">schedule</span>
-                                        <span>Ends in: 5d 14h 22m</span>
+                                        <span>Tournament Not Started</span>
                                     </div>
                                 </div>
                             </div>
@@ -358,12 +358,15 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
                             <div className="order-2 lg:order-1 relative">
                                 <div className="relative z-10 bg-white text-secondary p-4 border-4 border-primary pixel-shadow transform rotate-2 max-w-xs mx-auto">
-                                    <div className="aspect-square bg-gray-100 mb-4 border-2 border-gray-200 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-6xl text-gray-300">checkroom</span>
+                                    <div className="aspect-square bg-white mb-4 border-2 border-gray-100 flex items-center justify-center overflow-hidden">
+                                        <img 
+                                            src="/summerdash_branded_hoodie_mockup_1778342413693.png" 
+                                            alt="SummerDash Branded Hoodie" 
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
                                     <div className="flex justify-between items-center text-xs md:text-sm font-black uppercase tracking-tight mb-2">
-                                        <span className="font-bold uppercase">Jersey #04</span>
-                                        <span className="bg-secondary text-primary px-2 py-0.5 font-bold">NFT</span>
+                                        <span className="font-bold uppercase">SummerDash #01</span>
                                     </div>
                                 </div>
                             </div>
@@ -379,24 +382,17 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                 <p className="text-gray-300 font-body text-base md:text-lg leading-relaxed">
                                     Transparent Fairness. Instant Rewards.
                                 </p>
-                                <div className="relative w-fit">
-                                    <button
-                                        onClick={() => {
-                                            setShowShopComingSoon(true);
-                                            setTimeout(() => setShowShopComingSoon(false), 2000);
+                                <button
+                                        onClick={(e) => {
+                                            const btn = e.currentTarget;
+                                            btn.innerText = "COMING SOON";
+                                            btn.disabled = true;
+                                            btn.classList.add('opacity-50', 'cursor-not-allowed');
                                         }}
-                                        className="mt-2 bg-primary text-secondary px-8 py-3 text-sm font-black uppercase tracking-widest border-2 border-white pixel-shadow hover:scale-105 transition-all active:translate-y-1"
+                                        className="mt-2 bg-primary text-secondary px-4 py-2 text-sm font-black uppercase tracking-widest border-2 border-white pixel-shadow hover:scale-105 transition-all active:translate-y-1 w-fit"
                                     >
                                         Visit Shop
                                     </button>
-                                    {showShopComingSoon && (
-                                        <div className="absolute -top-10 left-0 animate-bounce">
-                                            <div className="bg-white text-red-600 text-[10px] font-black px-3 py-1 border-2 border-secondary pixel-shadow uppercase">
-                                                Coming Soon!
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
                             </div>
                         </div>
                     </section>
@@ -419,19 +415,19 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
                                             <span>Rank 1</span>
-                                            <span className="text-primary">40% ({Math.floor(prizePool * 0.4).toLocaleString()} $DASH)</span>
+                                            <span className="text-black font-black">40% ({Math.floor(prizePool * 0.4).toLocaleString()} $DASH)</span>
                                         </div>
                                         <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
                                             <span>Rank 2</span>
-                                            <span className="text-primary">20% ({Math.floor(prizePool * 0.2).toLocaleString()} $DASH)</span>
+                                            <span className="text-black font-black">20% ({Math.floor(prizePool * 0.2).toLocaleString()} $DASH)</span>
                                         </div>
                                         <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
                                             <span>Rank 3</span>
-                                            <span className="text-primary">10% ({Math.floor(prizePool * 0.1).toLocaleString()} $DASH)</span>
+                                            <span className="text-black font-black">10% ({Math.floor(prizePool * 0.1).toLocaleString()} $DASH)</span>
                                         </div>
                                         <div className="flex justify-between text-xs font-bold border-b border-secondary/10 pb-1">
                                             <span>Rank 4-10</span>
-                                            <span className="text-primary">2% ea. ({Math.floor(prizePool * 0.02).toLocaleString()} $DASH)</span>
+                                            <span className="text-black font-black">2% ea. ({Math.floor(prizePool * 0.02).toLocaleString()} $DASH)</span>
                                         </div>
                                         <div className="flex justify-between text-xs font-bold pt-1 opacity-50">
                                             <span>Team Pool</span>
@@ -442,9 +438,9 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
 
                                 {/* Active Runners Counter */}
                                 <div className="border-4 border-secondary p-6 bg-white pixel-shadow flex flex-col justify-center items-center text-center">
-                                    <div className="text-4xl font-black text-secondary mb-1">250</div>
+                                    <div className="text-4xl font-black text-secondary mb-1">0</div>
                                     <div className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">Active Runners This Week</div>
-                                    <div className="mt-4 text-[10px] font-bold text-primary animate-pulse uppercase">+1,000 $DASH added per runner</div>
+                                    <div className="mt-4 text-[10px] font-bold text-black uppercase">Tournament Starting Soon (+1,000 $DASH Entry)</div>
                                 </div>
                             </div>
 
@@ -456,20 +452,32 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                         <div className="col-span-6 font-black uppercase tracking-tight mb-2">Runner</div>
                                         <div className="col-span-4 text-right">Score</div>
                                     </div>
-                                    {/* Row 1 */}
-                                    <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-200 items-center hover:bg-primary/10 transition-colors">
-                                        <div className="col-span-2 text-center flex justify-center">
-                                            <div className="size-8 bg-yellow-400 border-2 border-black flex items-center justify-center font-bold text-black">1</div>
+                                    {leaderboard.length > 0 ? (
+                                        leaderboard.map((entry, index) => (
+                                            <div key={entry.address} className="grid grid-cols-12 gap-4 p-4 border-b border-gray-200 items-center hover:bg-primary/10 transition-colors">
+                                                <div className="col-span-2 text-center flex justify-center">
+                                                    <div className={`size-8 border-2 border-black flex items-center justify-center font-bold text-black ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-300' : index === 2 ? 'bg-orange-400' : 'bg-white'}`}>
+                                                        {index + 1}
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-6 flex items-center gap-3">
+                                                    <span className="font-bold font-body text-sm md:text-base text-secondary">
+                                                        {entry.username}
+                                                        {entry.address.toLowerCase() === wallet?.toLowerCase() && (
+                                                            <span className="ml-2 text-[8px] bg-primary px-1 py-0.5 rounded-full text-secondary">YOU</span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="col-span-4 text-right font-mono font-bold text-base md:text-lg text-secondary">
+                                                    {entry.score.toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">
+                                            No records yet. Be the first to run!
                                         </div>
-                                        <div className="col-span-6 flex items-center gap-3">
-                                            <span className="font-bold font-body text-sm md:text-base text-secondary">CyberNinja_99</span>
-                                        </div>
-                                        <div className="col-span-4 text-right font-mono font-bold text-base md:text-lg text-secondary">8,942,000</div>
-                                    </div>
-                                    {/* Placeholder Row */}
-                                    <div className="p-4 text-center text-gray-400 text-xs font-bold uppercase tracking-tight mb-2">
-                                        ... Connect Wallet to see Rank ...
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -489,11 +497,11 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                     <span className="material-symbols-outlined">play_arrow</span>
                                     Practice
                                 </button>
-                                <button
-                                    onClick={() => payAndPlay(true)}
-                                    className="bg-white text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-3 active:translate-y-1"
+                                 <button
+                                    disabled
+                                    className="bg-gray-100 text-gray-400 h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-gray-300 cursor-not-allowed flex items-center justify-center gap-3"
                                 >
-                                    <span className="material-symbols-outlined">trophy</span>
+                                    <span className="material-symbols-outlined">lock</span>
                                     Ranked
                                 </button>
                             </div>
