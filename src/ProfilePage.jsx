@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCoins, status }) => {
+const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCoins, onJoinTournament, rank, status }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [newUsername, setNewUsername] = useState(user?.username || '');
 
