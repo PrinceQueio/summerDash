@@ -122,81 +122,50 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCo
                     <div className="md:col-span-2">
                         {/* Tournament Standing Card */}
                         <div className="bg-secondary text-white border-4 border-primary p-6 mb-8 pixel-shadow flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
-                            {!user.isRanked && (
-                                <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[1px] pointer-events-none"></div>
-                            )}
+                            {/* Coming Soon Overlay for Tournament */}
+                            <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
+                                <p className="text-primary font-black uppercase tracking-widest text-xl rotate-[-2deg] border-4 border-primary px-4 py-2 bg-secondary pixel-shadow">Tournament Coming Soon</p>
+                            </div>
 
-                            <div className="flex items-center gap-4 z-20">
+                            <div className="flex items-center gap-4 z-20 opacity-30">
                                 <div className="size-12 bg-primary flex items-center justify-center text-secondary">
                                     <span className="material-symbols-outlined text-3xl font-black">trophy</span>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black uppercase tracking-widest text-primary">Tournament Standing</h4>
-                                    <p className="text-xs text-gray-400 uppercase">Weekly Season #1</p>
+                                    <p className="text-xs text-gray-400 uppercase">Season #1 Not Started</p>
                                 </div>
-                            </div>
-
-                            <div className="flex gap-6 items-center z-20">
-                                {user.isRanked ? (
-                                    <>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Current Rank</p>
-                                            <p className="text-xl font-black font-mono text-primary">#{rank || '??'}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Est. Share</p>
-                                            <p className="text-xl font-black font-mono text-white">{(rank === 1 ? 5000 : rank <= 10 ? 1000 : 100).toLocaleString()} $DASH</p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-end gap-2">
-                                        <p className="text-[10px] font-bold text-red-400 uppercase animate-pulse">NOT PARTICIPATING</p>
-                                        <button 
-                                            onClick={onJoinTournament}
-                                            className="bg-primary text-secondary border-4 border-secondary px-6 py-2 text-xs font-black uppercase tracking-wider hover:bg-white transition-colors"
-                                        >
-                                            STAKE 1,000 $DASH TO JOIN
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">history</span>
-                                Recent Sessions
+                                <span className="material-symbols-outlined text-primary">history_edu</span>
+                                Run History & Ledger
                             </h3>
-                            <span className="text-xs font-bold text-gray-400 uppercase">{user.sessions?.length || 0} Runs Recorded</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase">{user.sessions?.length || 0} Records</span>
                         </div>
 
                         <div className="bg-white border-4 border-secondary overflow-hidden pixel-shadow">
                             {user.sessions && user.sessions.length > 0 ? (
                                 <div className="divide-y-2 divide-gray-100">
-                                    <div className="grid grid-cols-4 p-4 bg-gray-50 text-[10px] font-black uppercase text-gray-500">
+                                    <div className="grid grid-cols-5 p-4 bg-gray-50 text-[10px] font-black uppercase text-gray-500">
                                         <div>Date</div>
                                         <div className="text-right">Obstacles</div>
+                                        <div className="text-right">Coins</div>
                                         <div className="text-right">Level</div>
-                                        <div className="text-right">Reward</div>
+                                        <div className="text-right">Status</div>
                                     </div>
                                     {visibleSessions.map((session, i) => (
-                                        <div key={i} className="grid grid-cols-4 p-4 items-center hover:bg-primary/5 transition-colors">
+                                        <div key={i} className="grid grid-cols-5 p-4 items-center hover:bg-primary/5 transition-colors">
                                             <div className="text-xs font-mono font-bold">{new Date(session.date).toLocaleDateString()}</div>
                                             <div className="text-right text-xs font-bold">{session.obstacles || 0}</div>
+                                            <div className="text-right text-xs font-black text-primary">+{session.coins || 0}</div>
                                             <div className="text-right text-xs">LVL {session.level}</div>
-                                            <div className="text-right flex flex-col items-end">
-                                                <div className="text-[10px] font-bold text-primary animate-pulse">+$DASH PENDING</div>
-                                                {session.txHash && (
-                                                    <a 
-                                                        href={`https://snowtrace.io/tx/${session.txHash}`} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="text-[8px] text-gray-400 hover:text-primary transition-colors flex items-center gap-0.5"
-                                                    >
-                                                        <span>Verify</span>
-                                                        <span className="material-symbols-outlined text-[8px]">open_in_new</span>
-                                                    </a>
-                                                )}
+                                            <div className="text-right">
+                                                <span className={`text-[8px] font-black px-2 py-0.5 border ${session.claimed ? 'bg-green-100 text-green-700 border-green-700' : 'bg-gray-100 text-gray-500 border-gray-300'}`}>
+                                                    {session.claimed ? 'MINTED' : 'IN WALLET'}
+                                                </span>
                                             </div>
                                         </div>
                                     ))}
@@ -205,52 +174,16 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCo
                                             onClick={() => setDisplayLimit(prev => prev + 20)}
                                             className="w-full py-4 text-xs font-bold uppercase text-gray-400 hover:text-secondary hover:bg-gray-50 border-t-2 border-gray-100 transition-colors"
                                         >
-                                            View More Runs ({sortedSessions.length - displayLimit} hidden)
+                                            View More ({sortedSessions.length - displayLimit} hidden)
                                         </button>
                                     )}
                                 </div>
                             ) : (
                                 <div className="p-10 text-center border-4 border-dashed border-gray-200 m-4">
                                     <span className="material-symbols-outlined text-5xl text-gray-200 mb-2">directions_run</span>
-                                    <p className="text-gray-400 font-bold uppercase text-xs">No sessions yet. Go out and run!</p>
+                                    <p className="text-gray-400 font-bold uppercase text-xs">No records found. Start your first run!</p>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Financial Ledger (Coins) */}
-                        <div className="mt-12 flex flex-col gap-6">
-                            <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">account_balance</span>
-                                Financial Ledger
-                            </h3>
-                            <div className="bg-white border-4 border-secondary overflow-hidden pixel-shadow">
-                                <div className="divide-y-2 divide-gray-100">
-                                    <div className="grid grid-cols-4 p-4 bg-gray-50 text-[10px] font-black uppercase text-gray-500">
-                                        <div>Date</div>
-                                        <div className="text-right">Coins Earned</div>
-                                        <div className="text-right">Value (0.1x)</div>
-                                        <div className="text-right">Status</div>
-                                    </div>
-                                    {user.sessions && user.sessions.length > 0 ? (
-                                        visibleSessions.map((session, i) => (
-                                            <div key={i} className="grid grid-cols-4 p-4 items-center">
-                                                <div className="text-xs font-mono font-bold">{new Date(session.date).toLocaleDateString()}</div>
-                                                <div className="text-right font-black text-sm text-primary">+{session.coins || 0}</div>
-                                                <div className="text-right text-[10px] font-bold">{Math.floor((session.coins || 0) * 0.1)} $DASH</div>
-                                                <div className="text-right">
-                                                    <span className={`text-[9px] font-black px-2 py-1 border ${session.claimed ? 'bg-green-100 text-green-700 border-green-700' : 'bg-gray-100 text-gray-500 border-gray-300'}`}>
-                                                        {session.claimed ? 'MINTED' : 'IN WALLET'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="p-10 text-center">
-                                            <p className="text-gray-400 font-bold uppercase text-xs">No transaction history</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
 
                         {/* Rank Progress - MOVED HERE */}

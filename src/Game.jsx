@@ -447,19 +447,19 @@ const Game = ({ onGameOver, onScoreUpdate, initialState }) => {
 
             // 5. OBSTACLES
             if (isStarted) {
-                const randomInterval = Math.floor(Math.random() * 100) + 150;
-                if (frameCount % randomInterval === 0 || obstacles.length === 0 && frameCount > 100) {
-                    if (obstacles.length === 0 || (canvas.width - obstacles[obstacles.length - 1].x > 400)) {
+                // Reduced interval for faster early action (100-200 frames instead of 150-250)
+                const randomInterval = Math.floor(Math.random() * 100) + 100;
+                if (frameCount % randomInterval === 0 || (obstacles.length === 0 && frameCount > 60)) {
+                    if (obstacles.length === 0 || (canvas.width - obstacles[obstacles.length - 1].x > 350)) {
                         let height = 50;
                         let type = 'ground';
                         let yPos = GROUND_Y - height;
 
-                        // 30% Chance to spawn flying enemy if vault._s > 10
-                        if (vault._s > 10 && Math.random() < 0.3) {
+                        // Start spawning flyers much earlier (after score > 0)
+                        if (vault._s > 0 && Math.random() < 0.35) {
                             const flyers = ['bat', 'wasp', 'ghost'];
                             type = flyers[Math.floor(Math.random() * flyers.length)];
-                            height = 40; // Smaller hitbox for flyer
-                            // Random flying height
+                            height = 40; 
                             const heights = [GROUND_Y - 90, GROUND_Y - 140, GROUND_Y - 170];
                             yPos = heights[Math.floor(Math.random() * heights.length)];
                         }
