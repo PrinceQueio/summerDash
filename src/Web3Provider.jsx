@@ -22,6 +22,7 @@ createAppKit({
     networks,
     metadata,
     projectId,
+    defaultNetwork: avalanche,
     features: {
         analytics: true // Optional - defaults to your Cloud configuration
     }

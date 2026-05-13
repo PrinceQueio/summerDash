@@ -1,7 +1,8 @@
 // VERSION: 1.0.4 - FIXED ESTIMATED_LEVEL BUG
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { useAppKitAccount, useAppKit, useAppKitProvider } from '@reown/appkit/react';
+import { useAppKitAccount, useAppKit, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react';
+import { avalanche } from '@reown/appkit/networks';
 import Game from './Game';
 import ErrorBoundary from './ErrorBoundary';
 import LandingPage from './LandingPage';
@@ -67,6 +68,7 @@ function AppContent() {
   const { address, isConnected } = useAppKitAccount();
   const { open } = useAppKit();
   const { walletProvider } = useAppKitProvider('eip155');
+  const { caipNetwork, switchNetwork } = useAppKitNetwork();
 
   const wallet = isConnected ? address : null;
 
@@ -197,6 +199,21 @@ function AppContent() {
     }
   }, [isConnected]);
 
+  // Automatic Network Switching logic
+  useEffect(() => {
+    if (isConnected && caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      const triggerSwitch = async () => {
+        try {
+          console.log(`Wrong network detected (${caipNetwork.id}). Switching to Avalanche (${CHAIN_ID})...`);
+          await switchNetwork(avalanche);
+        } catch (err) {
+          console.error("Failed to switch network:", err);
+        }
+      };
+      triggerSwitch();
+    }
+  }, [isConnected, caipNetwork, switchNetwork]);
+
   const connectWallet = async () => {
     try {
       await open();
@@ -232,6 +249,12 @@ function AppContent() {
   const claimDailyReward = async () => {
     if (!isConnected || !walletProvider) return;
     
+    // Ensure correct network
+    if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      await switchNetwork(avalanche);
+      return;
+    }
+
     const now = Math.floor(Date.now() / 1000);
     const lastClaim = user?.lastDailyClaim || 0;
     
@@ -276,6 +299,12 @@ function AppContent() {
     if (!isConnected || !walletProvider) return;
     if (user?.bonusClaimed) return alert("Bonus already claimed!");
 
+    // Ensure correct network
+    if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      await switchNetwork(avalanche);
+      return;
+    }
+
     try {
       setStatus("Preparing Bonus Claim...");
       const provider = new ethers.BrowserProvider(walletProvider);
@@ -311,6 +340,12 @@ function AppContent() {
   const payAndPlay = async (isRankedMode = true) => {
     if (!isConnected) {
       await connectWallet();
+      return;
+    }
+
+    // Ensure correct network
+    if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      await switchNetwork(avalanche);
       return;
     }
 
@@ -415,6 +450,12 @@ function AppContent() {
       return;
     }
     
+    // Ensure correct network
+    if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      await switchNetwork(avalanche);
+      return;
+    }
+
     const availableCoins = user?.gameCoins || 0;
     if (availableCoins < 1000) return alert("You need at least 1,000 Coins to convert!");
 
@@ -498,6 +539,12 @@ function AppContent() {
   const submitScore = async () => {
     if (!isConnected || !walletProvider) {
       connectWallet();
+      return;
+    }
+
+    // Ensure correct network
+    if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
+      await switchNetwork(avalanche);
       return;
     }
 
