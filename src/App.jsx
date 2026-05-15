@@ -15,7 +15,7 @@ import { TermsOfService, PrivacyPolicy } from './LegalModals';
 import { supabase } from './lib/supabase'; // NEW: Global Identity
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-const RANKED_FEE_DASH = 1000; 
+const RANKED_FEE_DASH = 1000;
 const INITIAL_DASH = 5000;
 const DAILY_REWARD = 500;
 const CHAIN_ID = 43114; // Avalanche C-Chain Mainnet
@@ -104,10 +104,10 @@ function AppContent() {
           } else if (Object.keys(savedStats).length > 0) {
             // Local exists, sync to cloud
             setUser(savedStats);
-            await supabase.from('profiles').upsert({ 
-              address: address.toLowerCase(), 
+            await supabase.from('profiles').upsert({
+              address: address.toLowerCase(),
               username: savedStats.username,
-              game_coins: savedStats.gameCoins || 0 
+              game_coins: savedStats.gameCoins || 0
             });
           } else {
             // Brand new player
@@ -125,9 +125,9 @@ function AppContent() {
             };
             setUser(newUser);
             localStorage.setItem(localKey, JSON.stringify(newUser));
-            await supabase.from('profiles').insert({ 
-              address: address.toLowerCase(), 
-              username: newUser.username 
+            await supabase.from('profiles').insert({
+              address: address.toLowerCase(),
+              username: newUser.username
             });
           }
         } catch (err) {
@@ -145,14 +145,14 @@ function AppContent() {
     const updatedUser = { ...user, username: name, usernameChanged: true };
     setUser(updatedUser);
     localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
-    
+
     // Sync to Cloud
     await supabase
       .from('profiles')
-      .upsert({ 
-        address: address.toLowerCase(), 
+      .upsert({
+        address: address.toLowerCase(),
         username: name,
-        game_coins: user.gameCoins || 0 
+        game_coins: user.gameCoins || 0
       });
   };
 
@@ -182,7 +182,7 @@ function AppContent() {
         .select('*')
         .order('score', { ascending: false })
         .limit(10);
-      
+
       if (error) throw error;
       setLeaderboard(data || []);
     } catch (err) {
@@ -248,7 +248,7 @@ function AppContent() {
 
   const claimDailyReward = async () => {
     if (!isConnected || !walletProvider) return;
-    
+
     // Ensure correct network
     if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
       await switchNetwork(avalanche);
@@ -257,7 +257,7 @@ function AppContent() {
 
     const now = Math.floor(Date.now() / 1000);
     const lastClaim = user?.lastDailyClaim || 0;
-    
+
     if (now < lastClaim + 86400) {
       const waitTime = Math.ceil((lastClaim + 86400 - now) / 3600);
       return alert(`Reward not ready! Please wait ${waitTime} hours.`);
@@ -273,7 +273,7 @@ function AppContent() {
 
       setStatus("Claiming 500 $DASH (Pay Gas)...");
       const tx = await contract.claimDailyReward();
-      
+
       setStatus("Awaiting Finality...");
       await tx.wait();
 
@@ -359,7 +359,7 @@ function AppContent() {
         }
       }
 
-      setStatus(isRankedMode ? `Entering Weekly Tournament (Fee: ${RANKED_FEE_DASH} $DASH)...` : "Starting Practice Run...");
+      setStatus(isRankedMode ? `Entering Weekly Tournament (Fee: ${RANKED_FEE_DASH} $DASH)...` : "Authorizing Practice Run (Free)...");
       setIsRanked(isRankedMode);
 
       if (isRankedMode) {
@@ -381,10 +381,15 @@ function AppContent() {
           setUser(updatedUser);
           localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
         }
+      } else {
+        // Practice Run: Cost-free Signature Authorization
+        setStatus("Awaiting Signature (No Gas)...");
+        const message = `Authorize Practice Run\nPlayer: ${address}\nSession: ${Date.now()}`;
+        await signer.signMessage(message);
       }
 
       setStatus("Race Authorized! Starting...");
-      
+
       // Small delay for UX
       setTimeout(() => {
         fetchPrizePool();
@@ -395,7 +400,7 @@ function AppContent() {
       console.error(err);
       const errorMessage = err.reason || err.message || "User denied transaction";
       setStatus("Auth Failed: " + (errorMessage.length > 40 ? errorMessage.substring(0, 40) + "..." : errorMessage));
-      
+
       // Reset status after a few seconds
       setTimeout(() => setStatus(""), 3000);
     }
@@ -434,7 +439,7 @@ function AppContent() {
 
       setUser(updatedUser);
       localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
-      
+
       // NEW: Immediate Cloud Sync of Coins & Best Score
       await supabase.from('profiles').upsert({
         address: address.toLowerCase(),
@@ -450,7 +455,7 @@ function AppContent() {
       connectWallet();
       return;
     }
-    
+
     // Ensure correct network
     if (caipNetwork && Number(caipNetwork.id) !== CHAIN_ID) {
       await switchNetwork(avalanche);
@@ -492,7 +497,7 @@ function AppContent() {
       const tx = await contract.convertPracticeCoins(availableCoins, runId, signature, {
         value: ethers.parseEther("0.05")
       });
-      
+
       setStatus("Awaiting Finality on Avalanche...");
       await tx.wait();
 
@@ -563,14 +568,14 @@ function AppContent() {
       if (v) {
         // Example: If score > 1000 but duration < 30 seconds, it's impossible
         if (v.s > 1000 && v.d < 30000) {
-            throw new Error("Invalid run metrics detected. Score discarded.");
+          throw new Error("Invalid run metrics detected. Score discarded.");
         }
       }
 
       setStatus(`Recording Score (${score}) on Avalanche...`);
-      
+
       const tx = await contract.submitScore(score);
-      
+
       setStatus("Awaiting Block Finality...");
       await tx.wait();
 
@@ -584,8 +589,8 @@ function AppContent() {
           score: score,
           timestamp: new Date().toISOString(),
           metadata: user?.lastValidation // Store the proof for admin review
-        }, { onConflict: 'address' }); 
-        
+        }, { onConflict: 'address' });
+
         fetchLeaderboard(); // Refresh local list
       } catch (supaErr) {
         console.error("Supabase Leaderboard Error:", supaErr);
@@ -671,7 +676,7 @@ function AppContent() {
         dashBalance: user.dashBalance - 1000,
         isRanked: true
       };
-      
+
       const { error } = await supabase.from('profiles').upsert({
         address: address.toLowerCase(),
         dash_balance: updatedUser.dashBalance,
@@ -693,8 +698,8 @@ function AppContent() {
 
   useEffect(() => {
     if (isConnected && user) {
-        syncProgress(user);
-        fetchUserRank();
+      syncProgress(user);
+      fetchUserRank();
     }
   }, [isConnected]);
 
@@ -753,11 +758,11 @@ function AppContent() {
           onOpenTerms={() => setShowTerms(true)}
           onOpenPrivacy={() => setShowPrivacy(true)}
         />
-        
+
         {/* Floating Social Link */}
-        <a 
-          href="https://x.com/TheSummerDash" 
-          target="_blank" 
+        <a
+          href="https://x.com/TheSummerDash"
+          target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-[60] group flex items-center gap-3"
         >
@@ -766,7 +771,7 @@ function AppContent() {
           </span>
           <div className="size-12 bg-primary text-secondary border-4 border-secondary flex items-center justify-center pixel-shadow hover:scale-110 active:scale-95 transition-all">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
           </div>
         </a>
@@ -814,7 +819,7 @@ function AppContent() {
                 {/* Simplified Info Block instead of buttons */}
                 <div className="w-full bg-white/5 border-2 border-white/20 p-4 mt-2">
                   <p className="text-xs md:text-sm font-bold opacity-80 uppercase leading-relaxed">
-                    Coins & Progress Saved! <br/>
+                    Coins & Progress Saved! <br />
                     Visit your <span className="text-primary">Profile</span> to convert Coins & Submit to Leaderboard.
                   </p>
                 </div>
