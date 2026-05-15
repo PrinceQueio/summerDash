@@ -359,27 +359,28 @@ function AppContent() {
         }
       }
 
-      setStatus(isRankedMode ? `Entering Weekly Tournament (Fee: ${RANKED_FEE_DASH} $DASH)...` : "Authorizing Practice Run (Gas Only)...");
+      setStatus(isRankedMode ? `Entering Weekly Tournament (Fee: ${RANKED_FEE_DASH} $DASH)...` : "Starting Practice Run...");
       setIsRanked(isRankedMode);
 
-      // Send transaction to the contract (Gas payment)
-      const tx = await signer.sendTransaction({
-        to: CONTRACT_ADDRESS,
-        value: ethers.parseEther("0") // Gas only transaction
-      });
+      if (isRankedMode) {
+        // Send transaction to the contract (Gas payment)
+        const tx = await signer.sendTransaction({
+          to: CONTRACT_ADDRESS,
+          value: ethers.parseEther("0") // Gas only transaction
+        });
 
-      setStatus("Confirming Entry on Avalanche...");
-      
-      const receipt = await tx.wait();
-      
-      if (isRankedMode && user) {
-        // Deduct $DASH balance
-        const updatedUser = {
-          ...user,
-          dashBalance: user.dashBalance - RANKED_FEE_DASH
-        };
-        setUser(updatedUser);
-        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+        setStatus("Confirming Entry on Avalanche...");
+        await tx.wait();
+
+        if (user) {
+          // Deduct $DASH balance
+          const updatedUser = {
+            ...user,
+            dashBalance: user.dashBalance - RANKED_FEE_DASH
+          };
+          setUser(updatedUser);
+          localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+        }
       }
 
       setStatus("Race Authorized! Starting...");
