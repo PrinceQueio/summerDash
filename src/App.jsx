@@ -60,6 +60,7 @@ function AppContent() {
   const [isRanked, setIsRanked] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [needsSessionSign, setNeedsSessionSign] = useState(false);
 
   // User Statistics & Session State
   const [user, setUser] = useState(null);
@@ -93,10 +94,13 @@ function AppContent() {
               address,
               username: cloudProfile.username,
               usernameChanged: true,
-              totalPoints: savedStats.totalPoints || 0,
-              dashBalance: savedStats.dashBalance || 0,
-              gameCoins: savedStats.gameCoins || 0,
-              globalLevel: calculateLevelFromXP(savedStats.totalPoints || 0),
+              totalPoints: cloudProfile.total_points || savedStats.totalPoints || 0,
+              dashBalance: cloudProfile.dash_balance || savedStats.dashBalance || 0,
+               gameCoins: cloudProfile.game_coins || savedStats.gameCoins || 0,
+              lastDailyClaim: cloudProfile.last_daily_claim || savedStats.lastDailyClaim || 0,
+              lastPracticeSign: cloudProfile.last_practice_sign || savedStats.lastPracticeSign || 0,
+              lastSessionSign: cloudProfile.last_session_sign || savedStats.lastSessionSign || 0,
+              globalLevel: calculateLevelFromXP(cloudProfile.total_points || savedStats.totalPoints || 0),
               sessions: savedStats.sessions || []
             };
             setUser(syncedUser);
@@ -120,6 +124,8 @@ function AppContent() {
               gameCoins: 0,
               bonusClaimed: false,
               lastDailyClaim: 0,
+              lastPracticeSign: 0,
+              lastSessionSign: Math.floor(Date.now() / 1000),
               globalLevel: calculateLevelFromXP(0),
               sessions: []
             };
@@ -259,38 +265,53 @@ function AppContent() {
     const lastClaim = user?.lastDailyClaim || 0;
 
     if (now < lastClaim + 86400) {
-      const waitTime = Math.ceil((lastClaim + 86400 - now) / 3600);
-      return alert(`Reward not ready! Please wait ${waitTime} hours.`);
+      const remaining = lastClaim + 86400 - now;
+      const hours = Math.floor(remaining / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      return alert(`Daily Sign-In already completed! Please wait ${hours}h ${minutes}m.`);
     }
 
     try {
-      setStatus("Preparing Daily Reward...");
+      setStatus("Preparing Daily Sign-In...");
       const provider = new ethers.BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
 
-      const abi = ["function claimDailyReward() public"];
+      const abi = ["function claimDailyReward() public payable"];
       const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
 
-      setStatus("Claiming 500 $DASH (Pay Gas)...");
-      const tx = await contract.claimDailyReward();
+      setStatus("Daily Sign-In (Pay Gas Only)...");
+      // Explicitly call with 0 value to ensure it's gas-only
+      const tx = await contract.claimDailyReward({ value: 0 });
 
-      setStatus("Awaiting Finality...");
+      setStatus("Verifying Sign-In on Avalanche...");
       await tx.wait();
 
       if (user) {
         const updatedUser = {
           ...user,
           dashBalance: user.dashBalance + DAILY_REWARD,
-          lastDailyClaim: now
+          lastDailyClaim: now,
+          lastSessionSign: now
         };
         setUser(updatedUser);
         localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
-        setStatus("Daily Reward Claimed!");
+        
+        // Sync to Cloud
+        await supabase.from('profiles').upsert({
+          address: address.toLowerCase(),
+          dash_balance: updatedUser.dashBalance,
+          last_daily_claim: now,
+          last_session_sign: now
+        }, { onConflict: 'address' });
+
+        setNeedsSessionSign(false);
+        setStatus("Daily Sign-In Successful! +500 $DASH");
         setTimeout(() => setStatus(""), 3000);
       }
     } catch (err) {
       console.error(err);
-      setStatus("Claim Failed");
+      const errorMsg = err.reason || err.message || "Transaction failed";
+      setStatus("Sign-In Failed: " + (errorMsg.length > 40 ? errorMsg.substring(0, 40) + "..." : errorMsg));
       setTimeout(() => setStatus(""), 3000);
     }
   };
@@ -376,16 +397,71 @@ function AppContent() {
           // Deduct $DASH balance
           const updatedUser = {
             ...user,
-            dashBalance: user.dashBalance - RANKED_FEE_DASH
+            dashBalance: user.dashBalance - RANKED_FEE_DASH,
+            lastSessionSign: Math.floor(Date.now() / 1000)
           };
           setUser(updatedUser);
           localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+          
+          await supabase.from('profiles').upsert({
+            address: address.toLowerCase(),
+            dash_balance: updatedUser.dashBalance,
+            last_session_sign: updatedUser.lastSessionSign
+          }, { onConflict: 'address' });
         }
       } else {
-        // Practice Run: Cost-free Signature Authorization
-        setStatus("Awaiting Signature (No Gas)...");
-        const message = `Authorize Practice Run\nPlayer: ${address}\nSession: ${Date.now()}`;
-        await signer.signMessage(message);
+        // Practice Run Flow
+        const now = Math.floor(Date.now() / 1000);
+        const lastPractice = user?.lastPracticeSign || 0;
+        const lastSession = user?.lastSessionSign || 0;
+
+        if (now - lastPractice > 86400) {
+          // Separate Practice Daily Sign-In Transaction (Gas only)
+          setStatus("Retro9000 Sign-In: Unlocking 24h Access (Pay Gas Only)...");
+          const tx = await signer.sendTransaction({
+            to: CONTRACT_ADDRESS,
+            value: ethers.parseEther("0")
+          });
+          
+          setStatus("Verifying Retro9000 Sign-In...");
+          await tx.wait();
+
+          if (user) {
+            const updatedUser = {
+              ...user,
+              lastPracticeSign: now,
+              lastSessionSign: now
+            };
+            setUser(updatedUser);
+            localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+            await supabase.from('profiles').upsert({
+              address: address.toLowerCase(),
+              last_practice_sign: now,
+              last_session_sign: now
+            }, { onConflict: 'address' });
+            setStatus("Practice Unlocked for 24h!");
+          }
+        } else if (now - lastSession > 7200) {
+          // Trigger Session Signature (Free) if they've been inactive
+          setStatus("Session Expired: Re-authorizing (Free)...");
+          const message = `SummerDash Session Verification\nPlayer: ${address}\nTime: ${new Date().toISOString()}`;
+          await signer.signMessage(message);
+          
+          if (user) {
+            const updatedUser = { ...user, lastSessionSign: now };
+            setUser(updatedUser);
+            localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+            await supabase.from('profiles').upsert({
+              address: address.toLowerCase(),
+              last_session_sign: now
+            }, { onConflict: 'address' });
+          }
+          setNeedsSessionSign(false);
+        } else {
+          setStatus("Authorizing Practice Run (Free)...");
+          const message = `Authorize Practice Run\nPlayer: ${address}\nSession: ${Date.now()}`;
+          await signer.signMessage(message);
+        }
       }
 
       setStatus("Race Authorized! Starting...");
@@ -637,6 +713,10 @@ function AppContent() {
         address: address.toLowerCase(),
         game_coins: currentUser.gameCoins,
         total_points: currentUser.totalPoints,
+        dash_balance: currentUser.dashBalance,
+        last_daily_claim: currentUser.lastDailyClaim,
+        last_practice_sign: currentUser.lastPracticeSign,
+        last_session_sign: currentUser.lastSessionSign,
         username: currentUser.username
       }, { onConflict: 'address' });
       console.log("Cloud sync successful!");
@@ -703,6 +783,46 @@ function AppContent() {
     }
   }, [isConnected]);
 
+  useEffect(() => {
+    if (isConnected && user) {
+      const lastSign = user.lastSessionSign || 0;
+      const now = Math.floor(Date.now() / 1000);
+      if (now - lastSign > 7200) { // 2 hours
+        setNeedsSessionSign(true);
+      }
+    }
+  }, [isConnected, user]);
+
+  const verifySession = async () => {
+    if (!walletProvider || !user) return;
+    try {
+      setStatus("Verifying Session...");
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
+      
+      const message = `SummerDash Session Verification\nPlayer: ${address}\nTime: ${new Date().toISOString()}`;
+      await signer.signMessage(message);
+
+      const now = Math.floor(Date.now() / 1000);
+      const updatedUser = { ...user, lastSessionSign: now };
+      setUser(updatedUser);
+      localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+
+      await supabase.from('profiles').upsert({
+        address: address.toLowerCase(),
+        last_session_sign: now
+      }, { onConflict: 'address' });
+
+      setNeedsSessionSign(false);
+      setStatus("Session Verified!");
+      setTimeout(() => setStatus(""), 2000);
+    } catch (err) {
+      console.error(err);
+      setStatus("Verification Failed");
+      setTimeout(() => setStatus(""), 3000);
+    }
+  };
+
   // State Switching Logic
   if (gameState === 'START') {
     if (currentView === 'ABOUT') {
@@ -728,6 +848,7 @@ function AppContent() {
             onDisconnect={() => open({ view: 'Account' })}
             onConvertCoins={convertCoinsToDash}
             onJoinTournament={joinTournament}
+            onClaimDaily={claimDailyReward}
             rank={userRank}
             status={status}
           />
@@ -850,6 +971,28 @@ function AppContent() {
           </div>
         )}
       </div>
+
+      {/* Session Re-Auth Overlay */}
+      {needsSessionSign && (
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-6">
+          <div className="bg-white border-4 border-primary p-8 max-w-sm w-full text-center pixel-shadow animate-in zoom-in duration-300">
+            <div className="size-16 bg-primary border-4 border-secondary flex items-center justify-center mx-auto mb-6">
+              <span className="material-symbols-outlined text-4xl text-secondary">history</span>
+            </div>
+            <h2 className="text-2xl font-black uppercase mb-2">Session Expired</h2>
+            <p className="text-xs font-bold text-gray-500 uppercase mb-8 leading-relaxed">
+              You've been away for more than 2 hours. Please sign your wallet to continue playing.
+            </p>
+            <button
+              onClick={verifySession}
+              className="w-full bg-primary text-secondary py-4 text-sm font-black uppercase tracking-widest border-4 border-secondary pixel-shadow hover:scale-105 active:translate-y-1 transition-all"
+            >
+              Sign Wallet (Free)
+            </button>
+            <p className="text-[10px] font-bold text-gray-400 mt-4 uppercase">No network fee required</p>
+          </div>
+        </div>
+      )}
 
       {/* Legal Modals */}
       <TermsOfService isOpen={showTerms} onClose={() => setShowTerms(false)} />

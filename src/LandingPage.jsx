@@ -117,6 +117,10 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                 <div className="bg-primary text-secondary px-4 py-2 border-2 border-secondary pixel-shadow transform rotate-1 w-fit mb-4 ml-auto">
                                     <span className="text-sm font-black uppercase tracking-widest">Connect Wallet & Claim 5,000 $DASH Bonus!</span>
                                 </div>
+                                <div className="flex items-center gap-2 mb-4 ml-auto w-fit bg-secondary text-primary px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] pixel-shadow-sm border border-primary animate-pulse">
+                                    <span className="material-symbols-outlined text-xs">stars</span>
+                                    Retro9000 Active
+                                </div>
                                 {wallet && !user?.bonusClaimed && (
                                     <div className="flex items-center gap-4 mb-6 ml-auto w-fit bg-secondary/5 px-4 py-3 border-l-4 border-primary">
                                         <span className="text-xs font-black uppercase text-gray-600 tracking-wider">

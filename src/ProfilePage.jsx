@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCoins, onJoinTournament, rank, status }) => {
+const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCoins, onJoinTournament, onClaimDaily, rank, status }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [newUsername, setNewUsername] = useState(user?.username || '');
 
@@ -32,6 +32,8 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCo
         onUpdateUsername(newUsername.trim());
         setIsEditing(false);
     };
+
+    const canClaimDaily = !user.lastDailyClaim || (Math.floor(Date.now() / 1000) >= user.lastDailyClaim + 86400);
 
     return (
         <div className="min-h-screen bg-background-light font-display antialiased text-secondary selection:bg-primary selection:text-secondary">
@@ -236,6 +238,50 @@ const ProfilePage = ({ user, onBack, onUpdateUsername, onDisconnect, onConvertCo
 
                     {/* Bank & Progress */}
                     <div className="flex flex-col gap-6">
+                        {/* DAILY SIGN-IN CARD */}
+                        <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary">calendar_today</span>
+                            Daily Rewards
+                        </h3>
+                        <div className="bg-white border-4 border-secondary p-6 pixel-shadow relative overflow-hidden group">
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-center mb-4">
+                                    <p className="text-[10px] font-black text-secondary uppercase tracking-widest">Sign-In Status</p>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 border ${canClaimDaily ? 'bg-primary text-secondary border-secondary' : 'bg-green-100 text-green-700 border-green-700'}`}>
+                                        {canClaimDaily ? 'READY' : 'CLAIMED'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className={`size-12 flex items-center justify-center border-4 ${canClaimDaily ? 'bg-primary border-secondary' : 'bg-gray-100 border-gray-300'}`}>
+                                        <span className="material-symbols-outlined text-secondary">workspace_premium</span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black uppercase tracking-tight">Daily Streak +500 $DASH</h4>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">One transaction per 24 hours</p>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={onClaimDaily}
+                                    disabled={!canClaimDaily}
+                                    className={`w-full py-4 text-sm font-black uppercase tracking-widest border-4 pixel-shadow transition-all flex items-center justify-center gap-2
+                                        ${canClaimDaily 
+                                            ? 'bg-secondary text-primary border-primary hover:bg-black hover:scale-[1.02] active:translate-y-1' 
+                                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'}`}
+                                >
+                                    <span className="material-symbols-outlined">{canClaimDaily ? 'app_registration' : 'lock_clock'}</span>
+                                    {canClaimDaily ? 'Sign-In (Gas Only)' : 'Check Back Tomorrow'}
+                                </button>
+                                
+                                {!canClaimDaily && (
+                                    <p className="text-[7px] font-bold text-center text-gray-400 uppercase mt-2">
+                                        Next sign-in available in {Math.floor((user.lastDailyClaim + 86400 - Math.floor(Date.now() / 1000)) / 3600)}h {Math.floor(((user.lastDailyClaim + 86400 - Math.floor(Date.now() / 1000)) % 3600) / 60)}m
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
                         {/* THE SUMMER DASH ATM (BANK) */}
                         <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary">payments</span>
