@@ -17,7 +17,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
     return (
         <div className="bg-background-light text-secondary font-display antialiased overflow-x-hidden min-h-screen">
             {/* Navbar */}
-            <nav className="sticky top-0 z-50 w-full border-b-4 border-secondary bg-white/90 backdrop-blur-md">
+            <nav className="fixed top-0 left-0 z-50 w-full border-b-4 border-secondary bg-white/90 backdrop-blur-md">
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
                     <div className="flex items-center gap-3">
                         <div className="flex size-10 items-center justify-center bg-secondary text-primary rounded-sm pixel-shadow">
@@ -69,7 +69,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
             </nav>
 
             {/* Main Layout with Pathway */}
-            <div className="relative mx-auto max-w-7xl flex flex-col md:flex-row">
+            <div className="relative mx-auto max-w-7xl flex flex-col md:flex-row pt-24 md:pt-28">
                 {/* The Pathway (Left Sidebar decorative on desktop) */}
                 <div className="hidden md:flex w-24 flex-col items-center pt-10 shrink-0 relative">
                     <div className="sticky top-32 flex flex-col items-center h-[calc(100vh-8rem)]">
