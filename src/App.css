@@ -305,6 +305,7 @@ body.game-active {
 .premium-gradient {
   background: linear-gradient(135deg, #00ff96 0%, #00b8ff 100%) !important;
   -webkit-background-clip: text !important;
+  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
 

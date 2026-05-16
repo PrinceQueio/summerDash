@@ -184,9 +184,8 @@ function AppContent() {
     }
   };
 
-  const [leaderboard, setLeaderboard] = useState([]);
-
   // Fetch Leaderboard from Supabase
+  const fetchDailyLeaderboard = async () => {
     try {
       console.log("Fetching daily leaderboard...");
       const { data, error } = await supabase
