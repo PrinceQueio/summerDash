@@ -7,6 +7,7 @@ const GameRoom = ({
     payAndPlay, 
     claimBonus, 
     prizePool, 
+    leaderboard = [],
     status, 
     onBack 
 }) => {
@@ -120,6 +121,42 @@ const GameRoom = ({
                         <span className="font-black uppercase tracking-widest text-xs">{status}</span>
                     </div>
                 )}
+
+                {/* Compact Leaderboard Section */}
+                <div className="mt-8 bg-white text-secondary border-4 border-primary pixel-shadow overflow-hidden">
+                    <div className="bg-secondary text-primary px-4 py-2 font-black uppercase tracking-widest text-xs flex justify-between">
+                        <span>Top Runners</span>
+                        <span className="opacity-50">Global Ranking</span>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {leaderboard.length > 0 ? (
+                            leaderboard.map((entry, index) => (
+                                <div key={entry.address} className="grid grid-cols-12 gap-2 p-3 border-b border-gray-100 items-center hover:bg-primary/5 transition-colors">
+                                    <div className="col-span-2 text-center flex justify-center">
+                                        <div className={`size-6 border-2 border-black flex items-center justify-center text-[10px] font-bold text-black ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-300' : index === 2 ? 'bg-orange-400' : 'bg-white'}`}>
+                                            {index + 1}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-6">
+                                        <span className="font-bold text-xs uppercase tracking-tight truncate block">
+                                            {entry.username}
+                                            {wallet && entry.address.toLowerCase() === wallet.toLowerCase() && (
+                                                <span className="ml-2 text-[8px] bg-primary px-1 py-0.5 rounded-full text-secondary">YOU</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="col-span-4 text-right font-mono font-bold text-sm text-secondary">
+                                        {entry.score.toLocaleString()}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                                Waiting for data...
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Decorative Character Footer */}

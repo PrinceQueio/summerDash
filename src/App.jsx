@@ -6,6 +6,7 @@ import { avalanche } from '@reown/appkit/networks';
 import Game from './Game';
 import ErrorBoundary from './ErrorBoundary';
 import LandingPage from './LandingPage';
+import GameRoom from './GameRoom';
 import GameContainer from './GameContainer';
 import AboutPage from './AboutPage';
 import OrientationOverlay from './OrientationOverlay';
@@ -870,11 +871,26 @@ function AppContent() {
     if (currentView === 'SHOP') {
       return <ShopPage onBack={() => setCurrentView('LANDING')} />;
     }
+    if (currentView === 'GAMEROOM') {
+      return (
+        <GameRoom
+          wallet={address}
+          connectWallet={connectWallet}
+          user={user}
+          payAndPlay={payAndPlay}
+          claimBonus={claimBonus}
+          prizePool={prizePool}
+          leaderboard={leaderboard}
+          status={status}
+          onBack={() => setCurrentView('LANDING')}
+        />
+      );
+    }
     return (
       <>
         <LandingPage
           startGame={startGame}
-          payAndPlay={payAndPlay}
+          payAndPlay={() => setCurrentView('GAMEROOM')}
           claimBonus={claimBonus}
           user={user}
           wallet={address}
