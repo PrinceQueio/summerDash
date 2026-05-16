@@ -118,16 +118,16 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                     <span className="text-sm font-black uppercase tracking-widest">Connect Wallet & Claim 5,000 $DASH Bonus!</span>
                                 </div>
 
-                                {wallet && !user?.bonusClaimed && (
+                                {(!wallet || !user?.bonusClaimed) && (
                                     <div className="flex items-center gap-4 mb-6 ml-auto w-fit bg-secondary/5 px-4 py-3 border-l-4 border-primary">
                                         <span className="text-xs font-black uppercase text-gray-600 tracking-wider">
-                                            5,000 $DASH Bonus (Pay Gas)
+                                            {wallet ? "5,000 $DASH Bonus (Pay Gas)" : "Connect to Claim 5,000 $DASH"}
                                         </span>
                                         <button
-                                            onClick={claimBonus}
+                                            onClick={wallet ? claimBonus : connectWallet}
                                             className="bg-primary text-secondary px-5 py-1.5 text-xs font-black uppercase border-2 border-secondary pixel-shadow-sm hover:-translate-y-1 active:translate-y-0 transition-all cursor-pointer"
                                         >
-                                            Claim
+                                            {wallet ? "CLAIM" : "CONNECT"}
                                         </button>
                                     </div>
                                 )}

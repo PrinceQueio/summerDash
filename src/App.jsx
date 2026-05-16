@@ -98,8 +98,9 @@ function AppContent() {
               dashBalance: cloudProfile.dash_balance || savedStats.dashBalance || 0,
                gameCoins: cloudProfile.game_coins || savedStats.gameCoins || 0,
               lastDailyClaim: cloudProfile.last_daily_claim || savedStats.lastDailyClaim || 0,
-              lastPracticeSign: cloudProfile.last_practice_sign || savedStats.lastPracticeSign || 0,
+               lastPracticeSign: cloudProfile.last_practice_sign || savedStats.lastPracticeSign || 0,
               lastSessionSign: cloudProfile.last_session_sign || savedStats.lastSessionSign || 0,
+              bonusClaimed: cloudProfile.bonus_claimed || savedStats.bonusClaimed || false,
               globalLevel: calculateLevelFromXP(cloudProfile.total_points || savedStats.totalPoints || 0),
               sessions: savedStats.sessions || []
             };
@@ -330,12 +331,14 @@ function AppContent() {
       setStatus("Preparing Bonus Claim...");
       const provider = new ethers.BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
-
-      setStatus("Awaiting Signature (Pay Gas to Claim)...");
-      const tx = await signer.sendTransaction({
-        to: CONTRACT_ADDRESS,
-        value: ethers.parseEther("0") // Gas only
-      });
+      
+      const abi = ["function claimBonus() public payable", "function bonusClaimFee() public view returns (uint256)"];
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+      
+      const fee = await contract.bonusClaimFee();
+      
+      setStatus("Awaiting Signature (Pay Fee to Claim)...");
+      const tx = await contract.claimBonus({ value: fee });
 
       setStatus("Confirming Claim on Avalanche...");
       await tx.wait();
@@ -348,7 +351,14 @@ function AppContent() {
         };
         setUser(updatedUser);
         localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
-        setStatus("5,000 $DASH Claimed Successfully!");
+        
+        await supabase.from('profiles').upsert({
+          address: address.toLowerCase(),
+          dash_balance: updatedUser.dashBalance,
+          bonus_claimed: true
+        }, { onConflict: 'address' });
+
+        setStatus("Bonus Claimed! +5,000 $DASH");
         setTimeout(() => setStatus(""), 3000);
       }
     } catch (err) {
