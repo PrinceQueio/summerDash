@@ -57,7 +57,7 @@ const GameRoom = ({
                                     <span className="material-symbols-outlined text-sm">verified</span>
                                     Runner Verified: {wallet.slice(0,6)}...{wallet.slice(-4)}
                                 </div>
-                                <h2 className="text-3xl font-black uppercase mb-8 text-primary animate-glitch-text">System Online</h2>
+
 
                                 {/* Game Modes */}
                                 <div className="grid grid-cols-1 gap-4 mb-8">
