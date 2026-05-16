@@ -31,20 +31,15 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                         <button onClick={onOpenAbout} className="hover:text-primary transition-colors uppercase">About Game</button>
                         <a className="hover:text-primary transition-colors" href="#leaderboard">Leaderboard</a>
                         <a className="hover:text-primary transition-colors" href="#avalanche">Avalanche</a>
-                        {wallet && (
-                            <button onClick={onOpenProfile} className="text-primary bg-secondary px-3 py-1 flex items-center gap-1 pixel-shadow hover:scale-105 transition-transform">
-                                <span className="material-symbols-outlined text-sm">person</span>
-                                Profile
-                            </button>
-                        )}
+
                     </div>
 
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={handlePlayClick}
+                            onClick={() => payAndPlay(false)}
                             className="hidden sm:flex bg-primary text-secondary px-6 py-2 font-bold uppercase tracking-wider text-sm border-2 border-secondary pixel-shadow pixel-shadow-hover transition-all duration-200"
                         >
-                            {wallet ? "Play Now" : "Connect Wallet"}
+                            Enter Gameroom
                         </button>
 
                         <button
@@ -62,14 +57,12 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                         <button onClick={() => { onOpenAbout(); setIsMenuOpen(false); }} className="text-left py-2 border-b border-gray-100 uppercase">About Game</button>
                         <a onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-gray-100" href="#leaderboard">Leaderboard</a>
                         <a onClick={() => setIsMenuOpen(false)} className="py-2 border-b border-gray-100" href="#avalanche">Avalanche</a>
-                        {wallet && (
-                            <button onClick={() => { onOpenProfile(); setIsMenuOpen(false); }} className="text-left py-2 border-b border-gray-100 text-primary uppercase">Profile</button>
-                        )}
+
                         <button
-                            onClick={() => { handlePlayClick(); setIsMenuOpen(false); }}
+                            onClick={() => { payAndPlay(false); setIsMenuOpen(false); }}
                             className="bg-primary text-secondary w-full py-4 font-bold uppercase tracking-wider text-base border-2 border-secondary pixel-shadow"
                         >
-                            {wallet ? "Play Now" : "Connect Wallet"}
+                            Enter Gameroom
                         </button>
                     </div>
                 )}
@@ -114,64 +107,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                                     <div className="absolute right-0 top-0 h-full w-2 bg-gradient-to-b from-transparent via-primary/30 to-transparent animate-pulse"></div>
                                 </div>
 
-                                <div className="bg-primary text-secondary px-4 py-2 border-2 border-secondary pixel-shadow transform rotate-1 w-fit mb-4 ml-auto">
-                                    <span className="text-sm font-black uppercase tracking-widest">Connect Wallet & Claim 5,000 $DASH Bonus!</span>
-                                </div>
 
-                                {(!wallet || !user?.bonusClaimed) && (
-                                    <div className="flex items-center gap-4 mb-6 ml-auto w-fit bg-secondary/5 px-4 py-3 border-l-4 border-primary">
-                                        <span className="text-xs font-black uppercase text-gray-600 tracking-wider">
-                                            {wallet ? "5,000 $DASH Bonus (Pay Gas)" : "Connect to Claim 5,000 $DASH"}
-                                        </span>
-                                        <button
-                                            onClick={wallet ? claimBonus : connectWallet}
-                                            className="bg-primary text-secondary px-5 py-1.5 text-xs font-black uppercase border-2 border-secondary pixel-shadow-sm hover:-translate-y-1 active:translate-y-0 transition-all cursor-pointer"
-                                        >
-                                            {wallet ? "CLAIM" : "CONNECT"}
-                                        </button>
-                                    </div>
-                                )}
-                                {wallet && user?.bonusClaimed && (
-                                    <div className="flex items-center gap-2 mb-6 text-green-600 font-black uppercase text-xs">
-                                        <span className="material-symbols-outlined">verified</span>
-                                        Starter Bonus Claimed
-                                    </div>
-                                )}
-                                <p className="text-base md:text-lg text-gray-600 font-medium max-w-md font-body leading-relaxed">
-                                    Navigate through <strong>7 Glitched Biomes</strong> ranging from Cyber-Sewers to Deep Space.
-                                    The weekly prize pool grows by <strong>1,000 $DASH</strong> per runner.
-                                </p>
-
-                                <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-end">
-                                    <button
-                                        onClick={() => payAndPlay(false)}
-                                        className="bg-primary text-secondary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow pixel-shadow-hover transition-all duration-200 flex items-center justify-center gap-2 active:translate-y-1"
-                                    >
-                                        <span className="material-symbols-outlined">play_arrow</span>
-                                        Practice
-                                    </button>
-                                    <button
-                                        disabled
-                                        className="bg-gray-100 text-gray-400 h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 cursor-not-allowed group relative"
-                                    >
-                                        <span className="material-symbols-outlined">lock</span>
-                                        Ranked
-                                        <span className="absolute -top-3 -right-3 bg-gray-200 text-gray-500 text-[8px] px-2 py-1 border-2 border-gray-400 font-black uppercase">Coming Soon</span>
-                                    </button>
-                                </div>
-                                {status && (
-                                    <div className="mt-4 p-4 bg-secondary text-primary border-4 border-primary pixel-shadow animate-in fade-in slide-in-from-left duration-300 flex items-center gap-3">
-                                        <div className="size-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                        <span className="font-black uppercase tracking-widest text-xs md:text-sm">{status}</span>
-                                    </div>
-                                )}
-                                <div className="text-[10px] md:text-xs font-bold uppercase text-gray-400 tracking-widest mt-4 flex items-center gap-4">
-                                    <div>Current Pool: <span className="text-primary font-black uppercase">{prizePool} $DASH</span></div>
-                                    <div className="flex items-center gap-1 text-secondary">
-                                        <span className="material-symbols-outlined text-xs">schedule</span>
-                                        <span>Tournament Not Started</span>
-                                    </div>
-                                </div>
                             </div>
                             <div className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full bg-accent-gray border-4 border-secondary pixel-shadow group">
                                 {/* Decorative abstract game scene */}
@@ -490,22 +426,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                             <h2 className="text-3xl md:text-5xl font-black uppercase max-w-2xl leading-tight font-black uppercase tracking-tight mb-2">
                                 Enter the simulation.
                             </h2>
-                            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                                <button
-                                    onClick={() => payAndPlay(false)}
-                                    className="bg-secondary text-primary h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-secondary pixel-shadow hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-3 active:translate-y-1"
-                                >
-                                    <span className="material-symbols-outlined">play_arrow</span>
-                                    Practice
-                                </button>
-                                 <button
-                                    disabled
-                                    className="bg-gray-100 text-gray-400 h-14 px-8 text-lg font-bold uppercase tracking-wider border-2 border-gray-300 cursor-not-allowed flex items-center justify-center gap-3"
-                                >
-                                    <span className="material-symbols-outlined">lock</span>
-                                    Ranked
-                                </button>
-                            </div>
+
                         </div>
                     </section>
                 </div>
