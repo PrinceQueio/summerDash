@@ -294,8 +294,48 @@ body.game-active {
   animation: bounce-slow 3s ease-in-out infinite;
 }
 
-/* Override for Remix-style Shop */
-body.shop-active {
-  background-color: #ffffff !important;
-  color: #111111 !important;
+/* --- PREMIUM ENHANCEMENTS --- */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-bottom: 2px solid rgba(0, 255, 150, 0.2) !important;
+}
+
+.premium-gradient {
+  background: linear-gradient(135deg, #00ff96 0%, #00b8ff 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite !important;
+}
+
+.feature-card-premium {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.feature-card-premium:hover {
+  transform: translateY(-10px) scale(1.02) !important;
+  border-color: #00ff96 !important;
+  box-shadow: 0 20px 40px rgba(0, 255, 150, 0.15) !important;
+}
+
+.mesh-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(at 0% 0%, rgba(0, 255, 150, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 184, 255, 0.05) 0px, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
 }

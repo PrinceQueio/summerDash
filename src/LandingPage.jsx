@@ -15,9 +15,10 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
     };
 
     return (
-        <div className="bg-background-light text-secondary font-display antialiased overflow-x-hidden min-h-screen">
+        <div className="bg-background-light text-secondary font-display antialiased overflow-x-hidden min-h-screen relative">
+            <div className="mesh-background"></div>
             {/* Navbar */}
-            <nav className="fixed top-0 left-0 z-50 w-full border-b-4 border-secondary bg-white/90 backdrop-blur-md">
+            <nav className="fixed top-0 left-0 z-50 w-full glass-nav shadow-lg">
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
                     <div className="flex items-center gap-3">
                         <div className="flex size-10 items-center justify-center bg-secondary text-primary rounded-sm pixel-shadow">
@@ -109,22 +110,21 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
 
 
                             </div>
-                            <div className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full bg-accent-gray border-4 border-secondary pixel-shadow group">
-                                {/* Decorative abstract game scene */}
-                                <div className="absolute inset-0 bg-cover bg-center" data-alt="Abstract pixel art city skyline" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuA6KQiIbyroJB168YG_dn97nHeBMN15KxSPtsMSR0MF4tVV9Fb9lqBZX2nSUImtGZEiXUAGjx8MI62asWkMIEHVt6XbpD89UK9OJICDuJl9f0wy5EMg5yCD-GeZchZX2Ul7tI-8M-dwYM7tayamE0tRZmgoYbOaaDR5voQIMevcnV8XTd4io27mVtLeyk2MVUmadeW8fh908m-Cdg5c4ju6fIELgFVd4XBJRm9FMv6f4kT7NV1ROVnRVyeFx8xdb2827xXAVV5XQxna")', imageRendering: 'pixelated' }}>
-                                </div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 to-transparent flex items-end p-4 md:p-6">
-                                    <div className="bg-white p-3 md:p-4 border-2 border-secondary w-full">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] md:text-xs font-bold uppercase text-gray-500">Current Runner</span>
-                                            <span className="text-[10px] md:text-xs font-bold text-primary bg-secondary px-2 py-0.5">LVL 99</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                            <div className="h-full bg-primary w-3/4"></div>
+                                <div className="animate-float">
+                                    <div className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full bg-accent-gray border-4 border-secondary pixel-shadow group overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
+                                        {/* Decorative abstract game scene */}
+                                        <div className="absolute inset-0 flex items-center justify-center p-8">
+                                            <div className="relative w-full h-full border-2 border-dashed border-gray-200 flex items-center justify-center">
+                                                <div className="size-24 md:size-32 bg-[url('/player_run_sheet.png')] bg-no-repeat bg-[length:800%_100%] bg-[position:14%_0] animate-run-fast drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]"></div>
+                                                
+                                                {/* Float elements */}
+                                                <div className="absolute top-10 right-10 size-8 border-2 border-primary animate-bounce-slow"></div>
+                                                <div className="absolute bottom-20 left-20 size-4 bg-secondary rotate-45 animate-pulse"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </section>
 
@@ -138,18 +138,6 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                 {/* Path 1 */}
-                                <div className="bg-white border-4 border-secondary p-8 pixel-shadow flex flex-col items-center text-center group hover:-translate-y-2 transition-transform">
-                                    <div className="size-16 bg-primary border-4 border-secondary flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
-                                        <span className="material-symbols-outlined text-4xl text-secondary font-black uppercase tracking-tight mb-2">card_giftcard</span>
-                                    </div>
-                                    <h3 className="text-xl font-black uppercase mb-3 text-secondary">1. Claim Bonus</h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase leading-relaxed mb-4">
-                                        Connect your wallet and pay a small network fee to mint your <strong>5,000 $DASH</strong> starter pack.
-                                    </p>
-                                    <div className="mt-auto text-[10px] font-black text-primary uppercase">+5,000 $DASH ONCE</div>
-                                </div>
-
-                                {/* Path 2 */}
                                 <div className="bg-white border-4 border-secondary p-8 pixel-shadow flex flex-col items-center text-center group hover:-translate-y-2 transition-transform">
                                     <div className="size-16 bg-secondary border-4 border-primary flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform text-primary">
                                         <span className="material-symbols-outlined text-4xl font-black uppercase tracking-tight mb-2">payments</span>
