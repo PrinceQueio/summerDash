@@ -62,6 +62,8 @@ function AppContent() {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [needsSessionSign, setNeedsSessionSign] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [dailyLeaderboard, setDailyLeaderboard] = useState([]);
 
   // User Statistics & Session State
   const [user, setUser] = useState(null);
@@ -102,6 +104,8 @@ function AppContent() {
                lastPracticeSign: cloudProfile.last_practice_sign || savedStats.lastPracticeSign || 0,
               lastSessionSign: cloudProfile.last_session_sign || savedStats.lastSessionSign || 0,
               bonusClaimed: cloudProfile.bonus_claimed || savedStats.bonusClaimed || false,
+              dailyScore: cloudProfile.daily_score || 0,
+              dailyWins: cloudProfile.daily_wins || 0,
               globalLevel: calculateLevelFromXP(cloudProfile.total_points || savedStats.totalPoints || 0),
               sessions: savedStats.sessions || []
             };
@@ -183,6 +187,27 @@ function AppContent() {
   const [leaderboard, setLeaderboard] = useState([]);
 
   // Fetch Leaderboard from Supabase
+    try {
+      console.log("Fetching daily leaderboard...");
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('address, username, daily_score, daily_wins')
+        .gt('daily_score', 0)
+        .order('daily_score', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setDailyLeaderboard(data.map(d => ({
+        address: d.address,
+        username: d.username,
+        score: d.daily_score,
+        wins: d.daily_wins
+      })));
+    } catch (err) {
+      console.error("Daily leaderboard error:", err);
+    }
+  };
+
   const fetchLeaderboard = async () => {
     try {
       const { data, error } = await supabase
@@ -698,16 +723,25 @@ function AppContent() {
           txHash: tx.hash // Record the transaction proof
         };
 
-        const updatedUser = {
-          ...user,
-          totalPoints: user.totalPoints + score,
-          globalLevel: calculateLevelFromXP(user.totalPoints + score),
-          sessions: [...(user.sessions || []), newSession]
-        };
+          const updatedUser = {
+            ...user,
+            totalPoints: user.totalPoints + score,
+            dailyScore: Math.max(user.dailyScore || 0, score),
+            globalLevel: calculateLevelFromXP(user.totalPoints + score),
+            sessions: [...(user.sessions || []), newSession]
+          };
 
-        setUser(updatedUser);
-        localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
-      }
+          setUser(updatedUser);
+          localStorage.setItem(`sd_user_${address.toLowerCase()}`, JSON.stringify(updatedUser));
+          
+          // Sync to cloud
+          await supabase.from('profiles').upsert({
+            address: address.toLowerCase(),
+            total_points: updatedUser.totalPoints,
+            daily_score: updatedUser.dailyScore,
+            game_coins: user.gameCoins // Ensure coins are preserved
+          }, { onConflict: 'address' });
+        }
     } catch (err) {
       console.error(err);
       const errorMsg = err.reason || err.message || "User denied submission";
@@ -880,7 +914,7 @@ function AppContent() {
           payAndPlay={payAndPlay}
           claimBonus={claimBonus}
           prizePool={prizePool}
-          leaderboard={leaderboard}
+          leaderboard={dailyLeaderboard}
           status={status}
           onBack={() => setCurrentView('LANDING')}
         />

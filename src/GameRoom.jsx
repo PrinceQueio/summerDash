@@ -138,12 +138,20 @@ const GameRoom = ({
                                         </div>
                                     </div>
                                     <div className="col-span-6">
-                                        <span className="font-bold text-xs uppercase tracking-tight truncate block">
-                                            {entry.username}
-                                            {wallet && entry.address.toLowerCase() === wallet.toLowerCase() && (
-                                                <span className="ml-2 text-[8px] bg-primary px-1 py-0.5 rounded-full text-secondary">YOU</span>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-xs uppercase tracking-tight truncate block">
+                                                {entry.username}
+                                                {wallet && entry.address.toLowerCase() === wallet.toLowerCase() && (
+                                                    <span className="ml-2 text-[8px] bg-primary px-1 py-0.5 rounded-full text-secondary">YOU</span>
+                                                )}
+                                            </span>
+                                            {entry.wins > 0 && (
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <span className="material-symbols-outlined text-[10px] text-yellow-500">military_tech</span>
+                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{entry.wins} DAILY WINS</span>
+                                                </div>
                                             )}
-                                        </span>
+                                        </div>
                                     </div>
                                     <div className="col-span-4 text-right font-mono font-bold text-sm text-secondary">
                                         {entry.score.toLocaleString()}
