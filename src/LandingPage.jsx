@@ -420,15 +420,7 @@ const LandingPage = ({ startGame, payAndPlay, claimBonus, user, wallet, connectW
                         </div>
                     </section>
 
-                    {/* CTA Footer */}
-                    <section className="px-6 py-16 md:py-20 bg-accent-gray border-t-4 border-secondary">
-                        <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-8">
-                            <h2 className="text-3xl md:text-5xl font-black uppercase max-w-2xl leading-tight font-black uppercase tracking-tight mb-2">
-                                Enter the simulation.
-                            </h2>
 
-                        </div>
-                    </section>
                 </div>
 
                 {/* Balance Spacer (Desktop Only) - Ensures content center matches viewport center */}
