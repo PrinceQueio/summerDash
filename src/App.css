@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+/* ============================================================
+   TAILWIND V4 THEME — All design tokens live here
+   (tailwind.config.js is ignored by v4)
+   ============================================================ */
+@theme {
+  /* --- Colors --- */
+  --color-primary: #0df259;
+  --color-secondary: #111813;
+  --color-background-light: #ffffff;
+  --color-background-dark: #121216;
+  --color-sunny-yellow: #FFD700;
+  --color-sky-blue: #7DD3FC;
+  --color-grass-green: #86EFAC;
+  --color-accent-gray: #f3f4f6;
+
+  /* --- Fonts --- */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Noto Sans", sans-serif;
+
+  /* --- Border Radius --- */
+  --radius: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* --- Box Shadows --- */
+  --shadow-pixel: 4px 4px 0px 0px #111813;
+  --shadow-pixel-hover: 6px 6px 0px 0px #0df259;
+
+  /* --- Background images --- */
+  --background-image-pixel-pattern: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   GLOBAL BASE
+   ============================================================ */
+body {
+  margin: 0;
+  background-color: var(--color-background-dark);
+  color: var(--color-text-primary, #ffffff);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+body.game-active {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* ============================================================
+   UTILITY CLASSES (used inline via className)
+   ============================================================ */
+
+/* Pixel shadow helpers */
+.pixel-shadow {
+  box-shadow: 4px 4px 0px 0px #111813;
+}
+
+.pixel-shadow-sm {
+  box-shadow: 2px 2px 0px 0px #111813;
+}
+
+.pixel-shadow-hover:hover {
+  box-shadow: 6px 6px 0px 0px #0df259;
+  transform: translate(-2px, -2px);
+}
+
+/* Pathway dashed line (left sidebar in LandingPage) */
+.pathway-dashed {
+  background-image: linear-gradient(to bottom, #0df259 50%, transparent 50%);
+  background-size: 4px 20px;
+  background-repeat: repeat-y;
+}
+
+/* Mesh background */
+.mesh-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(13, 242, 89, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(13, 242, 89, 0.02) 0%, transparent 50%),
+    #ffffff;
+  pointer-events: none;
+}
+
+/* Glassmorphism nav */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 4px solid #111813;
+}
+
+/* ============================================================
+   CANVAS
+   ============================================================ */
+canvas {
+  border-radius: 4px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  background-color: #000 !important;
+  display: block;
+}
+
+img,
+canvas {
+  image-rendering: pixelated;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes run-fast {
+  from { background-position: 0% 0; }
+  to   { background-position: 800% 0; }
+}
+
+.animate-run-fast {
+  animation: run-fast 0.6s steps(8) infinite;
+}
+
+@keyframes glitch-text {
+  0%   { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+  25%  { text-shadow: -2px 0 0 rgba(0,255,150,0.5), 2px 0 0 rgba(255,0,80,0.5); }
+  50%  { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+  75%  { text-shadow: -2px 0 0 rgba(0,255,150,0.5), 2px 0 0 rgba(255,0,80,0.5); }
+  100% { text-shadow: 2px 0 0 rgba(0,255,150,0.5), -2px 0 0 rgba(255,0,80,0.5); }
+}
+
+.animate-glitch-text {
+  animation: glitch-text 2s infinite linear;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-50%) translateX(0); }
+  50%       { transform: translateY(-55%) translateX(-5px); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: #111813; }
+::-webkit-scrollbar-thumb { background: #0df259; border: 2px solid #111813; }
+
+/* ============================================================
+   GAME OVER / GAMEOVER SCREEN (inside canvas wrapper)
+   ============================================================ */
+.game-over-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Shop body override */
+body.shop-active {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}

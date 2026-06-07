@@ -1,0 +1,200 @@
+import React from 'react';
+
+const GameRoom = ({ 
+    wallet, 
+    connectWallet, 
+    user, 
+    payAndPlay, 
+    claimBonus, 
+    prizePool, 
+    leaderboard = [],
+    userRank,
+    status, 
+    onBack,
+    onOpenProfile,
+    isProcessing
+}) => {
+    return (
+        <div className="min-h-screen bg-secondary text-white font-display antialiased flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-pixel-pattern pointer-events-none"></div>
+            <div className="absolute -top-24 -left-24 size-64 bg-primary/20 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-24 -right-24 size-64 bg-primary/20 rounded-full blur-3xl"></div>
+
+            {/* Header / Back & Profile Buttons */}
+            <div className="absolute top-8 left-8 right-8 flex justify-between items-center z-20">
+                <button 
+                    onClick={onBack}
+                    className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform"
+                >
+                    <span className="material-symbols-outlined text-sm">arrow_back</span>
+                    Back to Hub
+                </button>
+                {wallet && onOpenProfile && (
+                    <button 
+                        onClick={onOpenProfile}
+                        className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform"
+                    >
+                        <span className="material-symbols-outlined text-sm">person</span>
+                        Profile
+                    </button>
+                )}
+            </div>
+
+            {/* Main Content Card */}
+            <div className="max-w-xl w-full z-10">
+                <div className="bg-white text-secondary p-8 border-8 border-primary pixel-shadow relative">
+                    {/* Header Label */}
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-secondary text-primary px-6 py-2 border-4 border-primary font-black uppercase tracking-[0.2em] text-sm transform -rotate-1">
+                        Gameroom
+                    </div>
+
+                    {/* Connection Status / Game Modes */}
+                    <div className="flex flex-col items-center gap-6 mt-4 w-full text-center">
+                        {wallet ? (
+                            <div className="flex items-center justify-center gap-2 text-xs font-black text-green-600 uppercase mb-2">
+                                <span className="material-symbols-outlined text-sm font-bold">verified</span>
+                                Runner Verified: {wallet.slice(0,6)}...{wallet.slice(-4)}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2 text-xs font-black text-red-500 uppercase mb-2">
+                                <span className="material-symbols-outlined text-sm font-bold animate-pulse">warning</span>
+                                Runner Not Connected
+                            </div>
+                        )}
+
+                        {/* Game Modes */}
+                        <div className="grid grid-cols-1 gap-4 mb-4 w-full">
+                            <button
+                                onClick={() => payAndPlay(false)}
+                                disabled={isProcessing}
+                                className={`bg-primary text-secondary py-4 px-8 text-xl font-black uppercase tracking-wider border-4 border-secondary pixel-shadow transition-all flex items-center justify-center gap-3 w-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-102 active:translate-y-1'}`}
+                            >
+                                <span className="material-symbols-outlined text-3xl">play_arrow</span>
+                                {isProcessing ? 'Loading...' : 'Play'}
+                            </button>
+                            
+                            <div className="relative group w-full">
+                                <button
+                                    disabled
+                                    className="w-full bg-gray-100 text-gray-400 py-4 px-8 text-xl font-black uppercase tracking-wider border-4 border-gray-300 cursor-not-allowed flex items-center justify-center gap-3"
+                                >
+                                    <span className="material-symbols-outlined text-3xl">lock</span>
+                                    Ranked Run
+                                </button>
+                                <span className="absolute -top-2 -right-2 bg-gray-200 text-gray-500 text-[8px] px-2 py-1 border-2 border-gray-400 font-black uppercase">Coming Soon</span>
+                            </div>
+                        </div>
+
+                        {/* Prize Pool Info */}
+                        <div className="bg-accent-gray p-4 border-4 border-secondary mb-4 w-full">
+                            <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest">
+                                <span className="text-gray-500">Weekly Pool:</span>
+                                <span className="text-primary">{prizePool} $DASH</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-secondary uppercase mt-1">
+                                <span className="material-symbols-outlined text-xs">schedule</span>
+                                Tournament starting soon
+                            </div>
+                        </div>
+
+                        {/* Claim Bonus Row */}
+                        {(!wallet || !user?.bonusClaimed) && (
+                            <div className="flex items-center gap-4 bg-secondary text-primary px-4 py-4 border-4 border-primary pixel-shadow animate-pulse w-full">
+                                <div className="flex-1 text-left">
+                                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Starter Bonus</div>
+                                    <div className="text-sm font-black uppercase tracking-tight">5,000 $DASH READY</div>
+                                </div>
+                                <button 
+                                    onClick={!wallet ? connectWallet : claimBonus}
+                                    disabled={isProcessing}
+                                    className={`bg-primary text-secondary px-6 py-2 text-xs font-black uppercase border-2 border-secondary transition-transform shrink-0 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110 active:translate-y-1'}`}
+                                >
+                                    {isProcessing ? 'LOADING' : (!wallet ? 'CONNECT' : 'CLAIM')}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Status Bar */}
+                {status && (
+                    <div className="mt-8 p-4 bg-primary text-secondary border-4 border-secondary pixel-shadow animate-in slide-in-from-bottom duration-300 flex items-center gap-3">
+                        <div className="size-6 border-4 border-secondary border-t-transparent rounded-full animate-spin"></div>
+                        <span className="font-black uppercase tracking-widest text-xs">{status}</span>
+                    </div>
+                )}
+
+                {/* Compact Leaderboard Section */}
+                <div className="mt-8 bg-white text-secondary border-4 border-primary pixel-shadow overflow-hidden">
+                    <div className="bg-secondary text-primary px-4 py-2 font-black uppercase tracking-widest text-xs flex justify-between">
+                        <span>Top Runners (Daily)</span>
+                        <span className="opacity-50">Global Ranking</span>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                        {leaderboard.length > 0 ? (
+                            leaderboard.map((entry, index) => (
+                                <div key={entry.address} className="grid grid-cols-12 gap-2 p-3 border-b border-gray-100 items-center hover:bg-primary/5 transition-colors">
+                                    <div className="col-span-2 text-center flex justify-center">
+                                        {index < 3 ? (
+                                            <div className={`size-6 border-2 border-black flex items-center justify-center text-[10px] font-black text-black ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-300' : 'bg-orange-400'}`}>
+                                                {index + 1}
+                                            </div>
+                                        ) : (
+                                            <span className="text-[11px] font-bold text-gray-400">{index + 1}</span>
+                                        )}
+                                    </div>
+                                    <div className="col-span-6">
+                                        <div className="flex items-center gap-1.5">
+                                            {index < 3 && (
+                                                <span className="material-symbols-outlined text-[14px] text-yellow-500 shrink-0">military_tech</span>
+                                            )}
+                                            <span className="font-bold text-xs uppercase tracking-tight truncate block">
+                                                {entry.username}
+                                                {wallet && entry.address.toLowerCase() === wallet.toLowerCase() && (
+                                                    <span className="ml-2 text-[8px] bg-primary px-1 py-0.5 rounded-full text-secondary">YOU</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-4 text-right font-mono font-bold text-sm text-secondary">
+                                        {entry.score.toLocaleString()}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                                Waiting for data...
+                            </div>
+                        )}
+                    </div>
+
+                    {/* User's own ranking below the leaderboard */}
+                    {wallet && user && (
+                        <div className="bg-secondary text-primary border-t-4 border-primary px-4 py-3 font-bold flex justify-between items-center text-xs">
+                            <div className="flex items-center gap-3">
+                                <span className="opacity-70 font-mono text-[10px]">YOUR RANK:</span>
+                                <div className="size-6 border-2 border-primary flex items-center justify-center text-[10px] font-black bg-primary text-secondary">
+                                    {userRank || '-'}
+                                </div>
+                                <span className="uppercase truncate max-w-[120px] sm:max-w-[200px]">{user.username || 'Anonymous'}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-right">
+                                <span className="font-mono">SCORE: {(user.dailyScore || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Decorative Character Footer */}
+            <div className="mt-12 flex items-center gap-8 opacity-50 grayscale">
+                <div className="w-12 h-12 bg-[url('/player_run_sheet.png')] bg-no-repeat bg-[length:800%_100%] bg-[position:0%_0]"></div>
+                <div className="w-12 h-12 bg-[url('/player_run_sheet.png')] bg-no-repeat bg-[length:800%_100%] bg-[position:14%_0]"></div>
+                <div className="w-12 h-12 bg-[url('/player_run_sheet.png')] bg-no-repeat bg-[length:800%_100%] bg-[position:28%_0]"></div>
+            </div>
+        </div>
+    );
+};
+
+export default GameRoom;
